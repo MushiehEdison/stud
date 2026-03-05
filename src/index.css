@@ -1,0 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,400;1,9..144,700&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+  --red: #C8102E;
+  --black: #0F0F0F;
+  --white: #FAFAF7;
+  --grey: #E8E8E3;
+  --muted: #888880;
+  --gold: #D4A017;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--white);
+  color: var(--black);
+  font-family: 'Fraunces', serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+::selection { background: var(--red); color: white; }
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: var(--white); }
+::-webkit-scrollbar-thumb { background: var(--black); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
