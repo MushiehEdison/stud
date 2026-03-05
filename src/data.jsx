@@ -6,8 +6,8 @@
 export const META = {
   title: "STUD 2026",
   subtitle: "Semaine du Travailleur",
-  tagline: "Associez Votre image à l'excellence et à la valorisation du travailleur de l'université de Douala.",
-  theme: "Personnel Engagé, Université d'Excellence",
+  tagline: "Associez votre image à l'excellence et à la valorisation des travailleurs de l'Université de Douala.",
+  theme: "Associez votre image à l'excellence et à la valorisation des travailleurs de l'Université de Douala.",
   dates: "24 – 30 Avril 2026",
   dateShort: "24.04 → 30.04",
   location: "Université de Douala",

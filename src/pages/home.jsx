@@ -111,10 +111,10 @@ export default function Home() {
                 opacity: loaded ? 1 : 0, transform: loaded ? "none" : "translateY(30px)",
                 transition: "all 0.7s ease 0.2s",
               }}>
-                SE<span style={{ color: "#C8102E" }}>MA</span><br />
-                INE<br />
+                SE<span style={{ color: "#C8102E" }}>MA</span>
+                INE
                 DU<br />
-                TRA<span style={{ color: "#C8102E" }}>VAI</span><br />
+                TRA<span style={{ color: "#C8102E" }}>VAI</span>
                 LLEUR
               </h1>
             </div>
