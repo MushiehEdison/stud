@@ -1,20 +1,23 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Play, Pin } from "lucide-react";
+import { ArrowRight, Play, Pin, Images, Megaphone } from "lucide-react";
 import { META, STATS, OBJECTIVES, SPONSORING, PROGRAM } from "../data";
 import logo from "../assets/logo.png";
 import uniLogo from "../assets/University_of_Douala_Logo.jpg";
-import uniImg from "../assets/uni.JPG";
+import uniImg from "../assets/uni.jpg";
 import Countdown from "../components/countdown";
 import { supabase } from "../lib/superbase";
 
-// ── SVG imports ──────────────────────────────────────────────
-import iconSport   from "../assets/icon-sport.svg";
-import iconCulture from "../assets/icon-culture.svg";
-import iconTrophy  from "../assets/icon-trophy.svg";
-// ────────────────────────────────────────────────────────────
+// ── Illustration images — displayed large, one per objective card ──
+// Save these in src/assets/ — they should be proper illustrations,
+// not icon-sized. Think 200–300px display size.
+import illuCohesion    from "../assets/icon-cohesion.svg";    // e.g. people gathered together
+import illuExcellence  from "../assets/icon-trophy.svg";  // e.g. person on podium / star
+import illuCelebration from "../assets/icon-celebration.svg"; // e.g. confetti / crowd
+import illuSolidarity  from "../assets/icon-solidarity.svg";  // e.g. hands joined
+// ──────────────────────────────────────────────────────────────────
 
-const OBJ_ICONS = [iconTrophy, iconSport, iconCulture, iconTrophy];
+const OBJ_ILLUSTRATIONS = [illuCohesion, illuExcellence, illuCelebration, illuSolidarity];
 
 function useInView(t = 0.1) {
   const ref = useRef(null);
@@ -55,31 +58,20 @@ export default function Home() {
   const [uniRef, uniV] = useInView();
   const [mediaRef, mediaV] = useInView();
 
-  // ── Supabase data ──────────────────────────────────────────
   const [galleryItems, setGalleryItems] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
 
   useEffect(() => {
     const fetchHome = async () => {
       const [{ data: gallery }, { data: anns }] = await Promise.all([
-        supabase
-          .from("gallery")
-          .select("id, url, caption, type, category")
-          .order("created_at", { ascending: false })
-          .limit(4),
-        supabase
-          .from("announcements")
-          .select("id, title, body, author, category, pinned, created_at")
-          .order("pinned", { ascending: false })
-          .order("created_at", { ascending: false })
-          .limit(3),
+        supabase.from("gallery").select("id, url, caption, type, category").order("created_at", { ascending: false }).limit(4),
+        supabase.from("announcements").select("id, title, body, author, category, pinned, created_at").order("pinned", { ascending: false }).order("created_at", { ascending: false }).limit(3),
       ]);
       if (gallery) setGalleryItems(gallery);
       if (anns)    setAnnouncements(anns);
     };
     fetchHome();
   }, []);
-  // ──────────────────────────────────────────────────────────
 
   useEffect(() => { setTimeout(() => setLoaded(true), 80); }, []);
 
@@ -118,11 +110,9 @@ export default function Home() {
                 Édition 2026
               </div>
               <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(4.5rem, 10vw, 10rem)", lineHeight: 0.88, letterSpacing: "0.02em", color: "#0F0F0F", opacity: loaded ? 1 : 0, transform: loaded ? "none" : "translateY(30px)", transition: "all 0.7s ease 0.2s" }}>
-                SE<span style={{ color: "#1565C0" }}>MA</span>
-                INE
+                SE<span style={{ color: "#1565C0" }}>MA</span>INE
                 DU<br />
-                TRA<span style={{ color: "#F57C00" }}>VAI</span>
-                LLEUR
+                TRA<span style={{ color: "#F57C00" }}>VAI</span>LLEUR
               </h1>
             </div>
             <div style={{ opacity: loaded ? 1 : 0, transition: "all 0.7s ease 0.5s" }}>
@@ -178,14 +168,11 @@ export default function Home() {
           <div style={{ padding: "2.5rem 2rem", borderRight: "1.5px solid #0F0F0F" }}>
             <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.58rem", letterSpacing: "0.2em", color: "#88887F", textTransform: "uppercase", marginBottom: "0.5rem" }}>Décompte officiel</div>
             <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.6rem", letterSpacing: "0.04em", lineHeight: 1.1 }}>
-              AVANT L'OUVERTURE<br />
-              <span style={{ color: "#1565C0" }}>STUD 2026</span>
+              AVANT L'OUVERTURE<br /><span style={{ color: "#1565C0" }}>STUD 2026</span>
             </div>
             <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.62rem", color: "#F57C00", letterSpacing: "0.1em", marginTop: "0.5rem" }}>{META.dates}</div>
           </div>
-          <div style={{ padding: "2rem" }}>
-            <Countdown />
-          </div>
+          <div style={{ padding: "2rem" }}><Countdown /></div>
         </div>
       </section>
 
@@ -204,9 +191,7 @@ export default function Home() {
             <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "2rem" }}>
               <img src={uniLogo} alt="Logo UDo" style={{ height: 52, width: "auto" }} />
               <div style={{ width: "1.5px", height: 40, background: "#EAEAE5" }} />
-              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.56rem", letterSpacing: "0.14em", color: "#88887F", textTransform: "uppercase", lineHeight: 1.6 }}>
-                Fondée en 1977<br />48 871 Étudiants
-              </div>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.56rem", letterSpacing: "0.14em", color: "#88887F", textTransform: "uppercase", lineHeight: 1.6 }}>Fondée en 1977<br />48 871 Étudiants</div>
             </div>
             <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(2rem, 4vw, 3.5rem)", lineHeight: 1, letterSpacing: "0.02em", marginBottom: "1rem" }}>
               UN ÉVÉNEMENT<br /><span style={{ color: "#1565C0" }}>INSTITUTIONNEL</span><br />D'ENVERGURE
@@ -225,8 +210,10 @@ export default function Home() {
       <section ref={mediaRef} style={{ borderBottom: "1.5px solid #0F0F0F" }}>
         <div style={{ maxWidth: 1280, margin: "0 auto" }}>
           <div style={{ padding: "1.5rem 2rem", borderBottom: "1.5px solid #0F0F0F", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.9rem", letterSpacing: "0.04em" }}>
-              Derniers <span style={{ color: "#1565C0" }}>Moments</span>
+            {/* Lucide icon as UI element in the label */}
+            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.9rem", letterSpacing: "0.04em", display: "flex", alignItems: "center", gap: "0.6rem" }}>
+              <Images size={26} strokeWidth={1.5} color="#1565C0" />
+              Derniers <span style={{ color: "#1565C0" }}>&nbsp;Moments</span>
             </span>
             <Link to="/gallery" style={{ textDecoration: "none", fontFamily: "'DM Mono', monospace", fontSize: "0.6rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "#1565C0", display: "flex", alignItems: "center", gap: "0.3rem" }}>
               Voir la galerie <ArrowRight size={12} />
@@ -244,15 +231,7 @@ export default function Home() {
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }} className="gallery-prev">
               {galleryItems.map((item, i) => (
-                <Link key={item.id} to="/gallery" style={{
-                  textDecoration: "none", display: "block",
-                  borderRight: i < 3 ? "1.5px solid #0F0F0F" : "none",
-                  overflow: "hidden", position: "relative",
-                  aspectRatio: "1",
-                  opacity: mediaV ? 1 : 0,
-                  transform: mediaV ? "none" : "scale(0.97)",
-                  transition: `all 0.5s ease ${i * 0.08}s`,
-                }}>
+                <Link key={item.id} to="/gallery" style={{ textDecoration: "none", display: "block", borderRight: i < 3 ? "1.5px solid #0F0F0F" : "none", overflow: "hidden", position: "relative", aspectRatio: "1", opacity: mediaV ? 1 : 0, transform: mediaV ? "none" : "scale(0.97)", transition: `all 0.5s ease ${i * 0.08}s` }}>
                   {item.type === "video" ? (
                     <div style={{ width: "100%", height: "100%", background: "#0D1B2A", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -260,23 +239,15 @@ export default function Home() {
                       </div>
                     </div>
                   ) : (
-                    <img
-                      src={item.url}
-                      alt={item.caption || ""}
-                      style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.4s" }}
+                    <img src={item.url} alt={item.caption || ""} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.4s" }}
                       onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
                       onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
                     />
                   )}
-                  {/* Caption on hover */}
                   {item.caption && (
                     <>
-                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(transparent 55%, rgba(0,0,0,0.65))", opacity: 0, transition: "opacity 0.3s", pointerEvents: "none" }}
-                        className="gallery-overlay"
-                      />
-                      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0.75rem", fontFamily: "'Fraunces', serif", fontStyle: "italic", fontSize: "0.75rem", color: "#fff", transform: "translateY(100%)", transition: "transform 0.3s", pointerEvents: "none" }}
-                        className="gallery-caption"
-                      >{item.caption}</div>
+                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(transparent 55%, rgba(0,0,0,0.65))", opacity: 0, transition: "opacity 0.3s", pointerEvents: "none" }} className="gallery-overlay" />
+                      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0.75rem", fontFamily: "'Fraunces', serif", fontStyle: "italic", fontSize: "0.75rem", color: "#fff", transform: "translateY(100%)", transition: "transform 0.3s", pointerEvents: "none" }} className="gallery-caption">{item.caption}</div>
                     </>
                   )}
                 </Link>
@@ -290,8 +261,10 @@ export default function Home() {
       <section style={{ borderBottom: "1.5px solid #0F0F0F" }}>
         <div style={{ maxWidth: 1280, margin: "0 auto" }}>
           <div style={{ padding: "1.5rem 2rem", borderBottom: "1.5px solid #0F0F0F", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.9rem", letterSpacing: "0.04em" }}>
-              Dernières <span style={{ color: "#F57C00" }}>Annonces</span>
+            {/* Lucide icon as UI element */}
+            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.9rem", letterSpacing: "0.04em", display: "flex", alignItems: "center", gap: "0.6rem" }}>
+              <Megaphone size={26} strokeWidth={1.5} color="#F57C00" />
+              Dernières <span style={{ color: "#F57C00" }}>&nbsp;Annonces</span>
             </span>
             <Link to="/announcements" style={{ textDecoration: "none", fontFamily: "'DM Mono', monospace", fontSize: "0.6rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "#1565C0", display: "flex", alignItems: "center", gap: "0.3rem" }}>
               Toutes les annonces <ArrowRight size={12} />
@@ -307,12 +280,7 @@ export default function Home() {
               {announcements.map((ann, i) => {
                 const catColor = CAT_COLORS[ann.category] || "#1565C0";
                 return (
-                  <Link key={ann.id} to="/announcements" style={{
-                    textDecoration: "none",
-                    borderRight: i < 2 ? "1.5px solid #0F0F0F" : "none",
-                    display: "flex", flexDirection: "column",
-                    transition: "background 0.15s",
-                  }}
+                  <Link key={ann.id} to="/announcements" style={{ textDecoration: "none", borderRight: i < 2 ? "1.5px solid #0F0F0F" : "none", display: "flex", flexDirection: "column", transition: "background 0.15s" }}
                     onMouseEnter={e => e.currentTarget.style.background = "#F5F8FF"}
                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                   >
@@ -337,7 +305,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── OBJECTIVES ── */}
+      {/* ── OBJECTIVES — illustrations used properly here ── */}
       <section ref={objRef} style={{ borderBottom: "1.5px solid #0F0F0F" }}>
         <div style={{ maxWidth: 1280, margin: "0 auto" }}>
           <div style={{ padding: "1.5rem 2rem", borderBottom: "1.5px solid #0F0F0F", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -346,9 +314,32 @@ export default function Home() {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }} className="obj-grid">
             {OBJECTIVES.map((o, i) => (
-              <div key={i} style={{ padding: "2.5rem 2rem", borderRight: i < 3 ? "1.5px solid #0F0F0F" : "none", opacity: objV ? 1 : 0, transform: objV ? "none" : "translateY(20px)", transition: `all 0.6s ease ${i * 0.1}s` }}>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "4.5rem", lineHeight: 1, color: i % 2 === 0 ? "#1565C0" : "#EAEAE5", marginBottom: "0.75rem", letterSpacing: "0.02em" }}>{o.num}</div>
-                <img src={OBJ_ICONS[i]} alt="" aria-hidden="true" style={{ width: 28, height: 28, marginBottom: "1rem", opacity: 0.5 }} onError={e => { e.target.style.display = "none"; }} />
+              <div key={i} style={{
+                padding: "2.5rem 2rem",
+                borderRight: i < 3 ? "1.5px solid #0F0F0F" : "none",
+                opacity: objV ? 1 : 0,
+                transform: objV ? "none" : "translateY(20px)",
+                transition: `all 0.6s ease ${i * 0.1}s`,
+                display: "flex", flexDirection: "column",
+              }}>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "4.5rem", lineHeight: 1, color: i % 2 === 0 ? "#1565C0" : "#EAEAE5", marginBottom: "1.25rem", letterSpacing: "0.02em" }}>{o.num}</div>
+
+                {/* ★ ILLUSTRATION — displayed at full, readable size */}
+                <div style={{
+                  width: "100%", aspectRatio: "4/3",
+                  marginBottom: "1.5rem",
+                  background: i % 2 === 0 ? "#EEF4FF" : "#FFF8EE",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  overflow: "hidden",
+                }}>
+                  <img
+                    src={OBJ_ILLUSTRATIONS[i]}
+                    alt={o.title}
+                    style={{ width: "85%", height: "85%", objectFit: "contain" }}
+                    onError={e => { e.target.parentElement.style.display = "none"; }}
+                  />
+                </div>
+
                 <h3 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1rem", marginBottom: "0.65rem", lineHeight: 1.3 }}>{o.title}</h3>
                 <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", fontSize: "0.82rem", color: "#666660", lineHeight: 1.7 }}>{o.desc}</p>
               </div>
@@ -370,8 +361,12 @@ export default function Home() {
             {featuredEvents.map((ev, i) => (
               <div key={i} style={{ padding: "2rem", borderRight: (i + 1) % 3 !== 0 ? "1.5px solid #0F0F0F" : "none", borderBottom: i < 3 ? "1.5px solid #0F0F0F" : "none", background: i === 0 ? "#0D1B2A" : "transparent", color: i === 0 ? "#FAFAF8" : "#0F0F0F", opacity: pgV ? 1 : 0, transform: pgV ? "none" : "translateY(16px)", transition: `all 0.55s ease ${i * 0.07}s` }}>
                 <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.58rem", letterSpacing: "0.16em", textTransform: "uppercase", color: i === 0 ? "#F57C00" : "#88887F", marginBottom: "0.75rem" }}>{ev.date}</div>
-                <div style={{ width: 40, height: 40, marginBottom: "0.75rem" }}>
-                  <img src={`/assets/${ev.svg}`} alt={ev.name} style={{ width: 40, height: 40, filter: i === 0 ? "brightness(0) invert(1)" : "none" }} onError={e => { e.target.style.display = "none"; }} />
+                {/* Event SVG from /public/assets/ — these are per-event illustrations from data */}
+                <div style={{ width: "100%", height: 80, marginBottom: "0.75rem", display: "flex", alignItems: "center" }}>
+                  <img src={`/assets/${ev.svg}`} alt={ev.name}
+                    style={{ height: "100%", width: "auto", maxWidth: "60%", objectFit: "contain", filter: i === 0 ? "brightness(0) invert(1)" : "none", opacity: i === 0 ? 0.7 : 1 }}
+                    onError={e => { e.target.style.display = "none"; }}
+                  />
                 </div>
                 <h3 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1.05rem", lineHeight: 1.3, marginBottom: "0.5rem" }}>{ev.name}</h3>
                 <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", fontSize: "0.82rem", lineHeight: 1.65, color: i === 0 ? "rgba(255,255,255,0.5)" : "#666660" }}>{ev.description}</p>
