@@ -7,22 +7,25 @@ import About from "./pages/about";
 import Programme from "./pages/programme";
 import Sponsoring from "./pages/sponsoring";
 import Contact from "./pages/contact";
+import Gallery from "./pages/gallery";
+import Announcements from "./pages/announcements";
+import AdminPanel from "./pages/adminPanel";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [pathname]);
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
   return null;
 }
 
-function Layout({ children }) {
+// Public pages wrap with Navbar + Footer
+// Admin page has its own full-page layout (no Navbar/Footer)
+function PublicLayout({ children }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <>
       <Navbar />
-      <main style={{ flex: 1 }}>{children}</main>
+      <main>{children}</main>
       <Footer />
-    </div>
+    </>
   );
 }
 
@@ -30,15 +33,25 @@ export default function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/programme" element={<Programme />} />
-          <Route path="/sponsoring" element={<Sponsoring />} />
-          <Route path="/contact" element={<Contact />} />
-        </Routes>
-      </Layout>
+      <Routes>
+        {/* ── Secret admin route — not linked anywhere ── */}
+        <Route path="/stud-admin-2026" element={<AdminPanel />} />
+
+        {/* ── Public routes ── */}
+        <Route path="/*" element={
+          <PublicLayout>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/programme" element={<Programme />} />
+              <Route path="/sponsoring" element={<Sponsoring />} />
+              <Route path="/gallery" element={<Gallery />} />
+              <Route path="/announcements" element={<Announcements />} />
+              <Route path="/contact" element={<Contact />} />
+            </Routes>
+          </PublicLayout>
+        } />
+      </Routes>
     </BrowserRouter>
   );
 }

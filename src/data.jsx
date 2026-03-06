@@ -1,15 +1,16 @@
 // ============================================================
 // STUD 2026 — Semaine du Travailleur, Université de Douala
-// All data sourced directly from the official LIVRET document
 // ============================================================
 
 export const META = {
   title: "STUD 2026",
   subtitle: "Semaine du Travailleur",
-  tagline: "Associez votre image à l'excellence et à la valorisation des travailleurs de l'Université de Douala.",
-  theme: "Associez votre image à l'excellence et à la valorisation des travailleurs de l'Université de Douala.",
+  tagline: "Associez Votre image à l'excellence et à la valorisation du travailleur de l'université de Douala.",
+  theme: "Personnel Engagé, Université d'Excellence",
   dates: "24 – 30 Avril 2026",
   dateShort: "24.04 → 30.04",
+  // ISO format for countdown
+  eventStart: "2026-04-24T06:00:00",
   location: "Université de Douala",
   patron: "Pr. Magloire ONDOA",
   patronTitle: "Recteur de l'Université de Douala",
@@ -35,7 +36,7 @@ export const ABOUT = {
       year: "1993",
       title: "Érection en Université d'État",
       description:
-        "Dans le cadre de la réforme globale du système universitaire camerounais : Décret n° 93/026 du 19 janvier 1993 portant création des universités d'État ; Décret n° 93/030 du 19 janvier 1993 portant organisation de l'Université de Douala. Autonomie administrative et académique conférée.",
+        "Décret n° 93/026 du 19 janvier 1993 portant création des universités d'État ; Décret n° 93/030 portant organisation de l'Université de Douala. Autonomie administrative et académique conférée.",
     },
     {
       year: "2019",
@@ -96,152 +97,40 @@ export const ABOUT = {
 };
 
 export const OBJECTIVES = [
-  { num: "01", title: "Valoriser le capital humain", desc: "Reconnaître et célébrer la contribution du personnel.", icon: "Award" },
-  { num: "02", title: "Développer les compétences", desc: "Offrir des opportunités de formation et de perfectionnement.", icon: "BookOpen" },
-  { num: "03", title: "Accroître la performance", desc: "Stimuler l'engagement et l'excellence au quotidien.", icon: "TrendingUp" },
-  { num: "04", title: "Consolider le sentiment d'appartenance", desc: "Promouvoir l'intégration et la cohésion institutionnelle.", icon: "Users" },
+  { num: "01", title: "Valoriser le capital humain", desc: "Reconnaître et célébrer la contribution du personnel.", svg: "award.svg" },
+  { num: "02", title: "Développer les compétences", desc: "Offrir des opportunités de formation et de perfectionnement.", svg: "book.svg" },
+  { num: "03", title: "Accroître la performance", desc: "Stimuler l'engagement et l'excellence au quotidien.", svg: "trending.svg" },
+  { num: "04", title: "Consolider le sentiment d'appartenance", desc: "Promouvoir l'intégration et la cohésion institutionnelle.", svg: "team.svg" },
 ];
 
 export const PROGRAM = {
   sports: [
-    {
-      name: "Marche Sportive",
-      date: "25 avril 2026",
-      time: "Rassemblement 6h00 · Départ 6h30",
-      description: "Itinéraire : Campus 1 – Palais de Justice – Chefferie Ndogbong – Carrefour Zachman – Campus 2 – Carrefour Pendaison – retour Campus 1. Modalité : libre (150 participants).",
-      details: "Vestimentaire : Polo / T-shirt UDO",
-      icon: "PersonStanding",
-    },
-    {
-      name: "Mini Tournoi Football Masculin",
-      date: "Mardi 28, Mercredi 29 & Jeudi 30 avril 2026",
-      time: "3 jours de compétition",
-      description: "Participants : 12 équipes réparties en 2 poules. Organisation : tirage au sort des play-offs prévu le 1er avril 2026. Composition : 5 personnes par équipe.",
-      details: "Modalité : Élimination directe. Jury : 1 arbitre central, 2 juges, 1 commissaire du match",
-      icon: "Trophy",
-    },
-    {
-      name: "Tir à la Corde",
-      date: "Jeudi 30 avril 2026",
-      time: "Journée",
-      description: "Composition des équipes : 5 personnes par équipe.",
-      details: "Modalité : Élimination directe. Jury : M. TONYE PAMBE & Mme MAKALE",
-      icon: "Dumbbell",
-    },
-    {
-      name: "Course de Relais",
-      date: "Jeudi 30 avril 2026",
-      time: "Journée",
-      description: "Composition des équipes : 4 personnes par équipe.",
-      details: "Modalité : Élimination directe",
-      icon: "Zap",
-    },
+    { name: "Marche Sportive", date: "25 avril 2026", time: "Rassemblement 6h00 · Départ 6h30", description: "Itinéraire : Campus 1 – Palais de Justice – Chefferie Ndogbong – Carrefour Zachman – Campus 2 – Carrefour Pendaison – retour Campus 1. Modalité : libre (150 participants).", details: "Vestimentaire : Polo / T-shirt UDO", svg: "run.svg" },
+    { name: "Mini Tournoi Football Masculin", date: "28–30 avril 2026", time: "3 jours de compétition", description: "Participants : 12 équipes réparties en 2 poules. Tirage au sort des play-offs prévu le 1er avril 2026. Composition : 5 personnes par équipe.", details: "Modalité : Élimination directe. Jury : 1 arbitre central, 2 juges, 1 commissaire du match", svg: "football.svg" },
+    { name: "Tir à la Corde", date: "30 avril 2026", time: "Journée", description: "Composition des équipes : 5 personnes par équipe.", details: "Modalité : Élimination directe. Jury : M. TONYE PAMBE & Mme MAKALE", svg: "rope.svg" },
+    { name: "Course de Relais", date: "30 avril 2026", time: "Journée", description: "Composition des équipes : 4 personnes par équipe.", details: "Modalité : Élimination directe", svg: "relay.svg" },
   ],
   cultural: [
-    {
-      name: "Quizz",
-      date: "Mardi 28 avril 2026",
-      time: "Journée",
-      description: "Composition : 12 groupes de 3 personnes. Contenu : 15 questions portant sur l'actualité et la connaissance de l'Université de Douala.",
-      details: "Modalité : Élimination directe. Jury : Dr MAKONDO & Mme MEKOUI",
-      icon: "HelpCircle",
-    },
-    {
-      name: "Poésie UDO",
-      date: "Mercredi 29 avril 2026",
-      time: "Journée",
-      description: "Thème : Fête du travail (1er mai) ou Université de Douala. Langues : Français ou anglais.",
-      details: "Modalité : Inscription en ligne. Jury : M. ONANA David, Théodore KAYESSE, Mme AKOA EVINA",
-      icon: "FileText",
-    },
-    {
-      name: "Songho'o / Damier",
-      date: "29 & 30 avril 2026",
-      time: "Journée",
-      description: "Participants : 08 équipes de 2. Modalité : croisement des vainqueurs jusqu'en finale.",
-      details: "Inscription libre sur WhatsApp. Jury : SCO, M. BILOUNGA (DIPD), M. FOUMAN, Pr FOUDA, Pr MVE BELINGA, Pr BIBOUM",
-      icon: "LayoutGrid",
-    },
-    {
-      name: "Concours de la Meilleure Signature Institutionnelle",
-      date: "30 avril 2026",
-      time: "Journée",
-      description: "12 participants (11 établissements + Services Centraux). Objectif : élaboration d'un message institutionnel bref et de haute qualité pour l'Université de Douala.",
-      details: "Jury : Pr MEFOUTE, Pr Thomas ATENGA, Dr AMOUGOU",
-      icon: "PenTool",
-    },
-    {
-      name: "Concours de Danses Patrimoniales",
-      date: "29 avril 2026",
-      time: "Journée",
-      description: "Participants : 1 équipe de 6 personnes par établissement + Services Centraux. Prestations sur rythmes locaux patrimoniaux (Essewé, Benskin, Assiko, Bitkutsi…).",
-      details: "Jury : DCOU, DASA, Directeurs ISH",
-      icon: "Music",
-    },
-    {
-      name: "Concours d'Art Culinaire",
-      date: "28 avril 2026",
-      time: "Journée",
-      description: "Thème : Mets traditionnels (Ndapche, Eru, Koki, Condré…). 12 participants (11 établissements + Services Centraux).",
-      details: "Jury : Pr IKELLE Rose, Chef Division de la Restauration, Les SAGP, Mme MVENG, Mme NNOUCK Chantale",
-      icon: "UtensilsCrossed",
-    },
-    {
-      name: "Karaoké (The Voice UDO)",
-      date: "28 avril 2026",
-      time: "Soirée",
-      description: "Modalité : Interprétation live des musiques du terroir.",
-      details: "Jury : Pr BIBOUM, EPOUPA, ASSENE Osée, ETEME Didier",
-      icon: "Mic",
-    },
-    {
-      name: "Élection Miss STUD",
-      date: "29 avril 2026",
-      time: "Soirée",
-      description: "Ouvert au public. Tenues : ville, traditionnelle, soirée, 1er mai. Déroulement : présentation en tenues professionnelle, sportive, culturelle, de soirée et de fête du travail.",
-      details: "Jury : Pr MODI KOKO, Pr MOUSSA, Dr ETET BAHA, Pr NTAMACK, Mannequin POLO BALEP",
-      icon: "Star",
-    },
-    {
-      name: "Jeu Tombola",
-      date: "01 Mai 2026",
-      time: "Clôture",
-      description: "Modalité : Tirage au sort et attribution de lots.",
-      details: "Jury : Mme DAAPA, 02 Majorettes, 02 personnels DAAPA",
-      icon: "Gift",
-    },
+    { name: "Quizz", date: "28 avril 2026", time: "Journée", description: "Composition : 12 groupes de 3 personnes. 15 questions portant sur l'actualité et la connaissance de l'Université de Douala.", details: "Modalité : Élimination directe. Jury : Dr MAKONDO & Mme MEKOUI", svg: "quiz.svg" },
+    { name: "Poésie UDO", date: "29 avril 2026", time: "Journée", description: "Thème : Fête du travail (1er mai) ou Université de Douala. Langues : Français ou anglais.", details: "Modalité : Inscription en ligne. Jury : M. ONANA David, Théodore KAYESSE, Mme AKOA EVINA", svg: "poetry.svg" },
+    { name: "Songho'o / Damier", date: "29 & 30 avril 2026", time: "Journée", description: "Participants : 08 équipes de 2. Modalité : croisement des vainqueurs jusqu'en finale.", details: "Inscription libre sur WhatsApp. Jury : SCO, M. BILOUNGA, M. FOUMAN, Pr FOUDA, Pr MVE BELINGA, Pr BIBOUM", svg: "chess.svg" },
+    { name: "Concours de la Meilleure Signature Institutionnelle", date: "30 avril 2026", time: "Journée", description: "12 participants (11 établissements + Services Centraux). Objectif : élaboration d'un message institutionnel bref et de haute qualité pour l'Université de Douala.", details: "Jury : Pr MEFOUTE, Pr Thomas ATENGA, Dr AMOUGOU", svg: "pen.svg" },
+    { name: "Concours de Danses Patrimoniales", date: "29 avril 2026", time: "Journée", description: "Participants : 1 équipe de 6 personnes par établissement + Services Centraux. Prestations sur rythmes locaux patrimoniaux (Essewé, Benskin, Assiko, Bitkutsi…).", details: "Jury : DCOU, DASA, Directeurs ISH", svg: "dance.svg" },
+    { name: "Concours d'Art Culinaire", date: "28 avril 2026", time: "Journée", description: "Thème : Mets traditionnels (Ndapche, Eru, Koki, Condré…). 12 participants (11 établissements + Services Centraux).", details: "Jury : Pr IKELLE Rose, Chef Division de la Restauration, Les SAGP, Mme MVENG, Mme NNOUCK Chantale", svg: "food.svg" },
+    { name: "Karaoké (The Voice UDO)", date: "28 avril 2026", time: "Soirée", description: "Modalité : Interprétation live des musiques du terroir.", details: "Jury : Pr BIBOUM, EPOUPA, ASSENE Osée, ETEME Didier", svg: "mic.svg" },
+    { name: "Élection Miss STUD", date: "29 avril 2026", time: "Soirée", description: "Ouvert au public. Tenues : ville, traditionnelle, soirée, 1er mai. Présentation en tenues professionnelle, sportive, culturelle, de soirée et de fête du travail.", details: "Jury : Pr MODI KOKO, Pr MOUSSA, Dr ETET BAHA, Pr NTAMACK, Mannequin POLO BALEP", svg: "crown.svg" },
+    { name: "Jeu Tombola", date: "01 Mai 2026", time: "Clôture", description: "Modalité : Tirage au sort et attribution de lots.", details: "Jury : Mme DAAPA, 02 Majorettes, 02 personnels DAAPA", svg: "gift.svg" },
   ],
   intellectual: [
-    {
-      name: "Conférences – Débats",
-      date: "28 Avril & 30 avril 2026",
-      time: "Journée",
-      description: "Thèmes : gestions de carrières et préparation à la retraite · La fête du travail · La banque, un partenaire fiable (gestion des agios) · Cotisations sociales (CNPS) et assurances : quel impact réel ? · Bulletin de solde.",
-      details: "Voir la sous-commission",
-      icon: "MessageSquare",
-    },
-    {
-      name: "Investissement Humain",
-      date: "27 avril 2026",
-      time: "Journée",
-      description: "Action : Assainissement des différents campus de l'Université de Douala.",
-      details: "",
-      icon: "Leaf",
-    },
-    {
-      name: "Visite Guidée et d'Apprentissage",
-      date: "27 avril 2026",
-      time: "Journée",
-      description: "Lieu : Centre d'archivage et de documentation du PAD (70 places).",
-      details: "Jury : C/DAAPA",
-      icon: "Building2",
-    },
+    { name: "Conférences – Débats", date: "28 & 30 avril 2026", time: "Journée", description: "Thèmes : gestions de carrières et préparation à la retraite · La fête du travail · La banque, un partenaire fiable (gestion des agios) · Cotisations sociales (CNPS) et assurances : quel impact réel ? · Bulletin de solde.", details: "Voir la sous-commission", svg: "conference.svg" },
+    { name: "Investissement Humain", date: "27 avril 2026", time: "Journée", description: "Action : Assainissement des différents campus de l'Université de Douala.", details: "", svg: "leaf.svg" },
+    { name: "Visite Guidée et d'Apprentissage", date: "27 avril 2026", time: "Journée", description: "Lieu : Centre d'archivage et de documentation du PAD (70 places).", details: "Jury : C/DAAPA", svg: "building.svg" },
   ],
 };
 
 export const SPONSORING = [
   {
-    tier: "Diamant", rank: "01", price: "15 000 000", currency: "XAF", badge: "◆", color: "#0EA5E9",
+    tier: "Diamant", rank: "01", price: "15 000 000", currency: "XAF", badge: "◆", color: "#1565C0",
     elements: [
       "1 podium pour la cérémonie + sonorisation et régie",
       "Parrainage des équipes de football",
@@ -266,7 +155,7 @@ export const SPONSORING = [
     ],
   },
   {
-    tier: "Platine", rank: "02", price: "5 000 000", currency: "XAF", badge: "■", color: "#8B5CF6",
+    tier: "Platine", rank: "02", price: "5 000 000", currency: "XAF", badge: "■", color: "#F57C00",
     elements: [
       "Parrainage la marche sportive",
       "Parrainage des ateliers de formation sur les thèmes fixés par l'entreprise",
@@ -288,7 +177,7 @@ export const SPONSORING = [
     ],
   },
   {
-    tier: "Or", rank: "03", price: "1 000 000", currency: "XAF", badge: "●", color: "#F59E0B",
+    tier: "Or", rank: "03", price: "1 000 000", currency: "XAF", badge: "●", color: "#F9A825",
     elements: [
       "Parrainage de la journée d'investissement humain",
       "Branding de tous les plants prévus pour l'activité de reforestation",
@@ -323,5 +212,7 @@ export const NAV_LINKS = [
   { label: "À Propos", path: "/about" },
   { label: "Programme", path: "/programme" },
   { label: "Sponsoring", path: "/sponsoring" },
+  { label: "Galerie", path: "/gallery" },
+  { label: "Annonces", path: "/announcements" },
   { label: "Contact", path: "/contact" },
 ];

@@ -1,12 +1,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,400;1,9..144,700&family=DM+Mono:wght@400;500&display=swap');
 
 :root {
-  --red: #C8102E;
+  --blue: #1565C0;
+  --blue-light: #1E88E5;
+  --blue-dark: #0D47A1;
+  --orange: #F57C00;
+  --gold: #F9A825;
   --black: #0F0F0F;
-  --white: #FAFAF7;
-  --grey: #E8E8E3;
-  --muted: #888880;
-  --gold: #D4A017;
+  --white: #FAFAF8;
+  --grey: #EAEAE5;
+  --muted: #88887F;
+  --border: #D8D8D3;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -18,8 +22,8 @@ body {
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
-::selection { background: var(--red); color: white; }
+::selection { background: var(--blue); color: white; }
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-track { background: var(--white); }
-::-webkit-scrollbar-thumb { background: var(--black); }
-a:focus-visible, button:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+::-webkit-scrollbar-thumb { background: var(--blue); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
