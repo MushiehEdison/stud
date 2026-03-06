@@ -18,9 +18,9 @@ export const META = {
 };
 
 export const STATS = [
-  { value: 48871, label: "Étudiants" },
-  { value: 2220, label: "Personnels" },
-  { value: 7, label: "Jours" },
+  { value: 12, label: "Activité" },
+  { value: 1000, label: "Personnes par jour" },
+  { value: 7, label: "Jours de festivités" },
   { value: 3, label: "Campus" },
 ];
 

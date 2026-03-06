@@ -319,8 +319,7 @@ export default function Home() {
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#F57C00", display: "inline-block" }} />
                 Édition 2026
               </div>
-              <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(3rem, 10vw, 10rem)", lineHeight: 0.88, letterSpacing: "0.02em", color: "#0F0F0F", margin: 0, opacity: loaded ? 1 : 0, transform: loaded ? "none" : "translateY(30px)", transition: "all 0.7s ease 0.2s" }}>
-                SE<span style={{ color: "#1565C0" }}>MA</span>INE DU<br />
+              <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(4.5rem, 10vw, 10rem)", lineHeight: 0.88, letterSpacing: "0.02em", color: "#0F0F0F", opacity: loaded ? 1 : 0, transform: loaded ? "none" : "translateY(30px)", transition: "all 0.7s ease 0.2s" }}>                SE<span style={{ color: "#1565C0" }}>MA</span>INE DU<br />
                 TRA<span style={{ color: "#F57C00" }}>VAI</span>LLEUR
               </h1>
             </div>
