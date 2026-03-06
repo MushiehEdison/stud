@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import { ChevronRight } from "lucide-react";
 import { ABOUT, META } from "../data";
 import ondoa from "../assets/ondoa.png";
-import uniImg from "../assets/uni.jpg";
+import uniImg from "../assets/uni.JPG";
 import uniLogo from "../assets/University_of_Douala_Logo.jpg";
 
 // ── SVG ICON IMPORTS ─────────────────────────────────────────

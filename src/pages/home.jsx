@@ -4,7 +4,7 @@ import { ArrowRight, Play, Pin } from "lucide-react";
 import { META, STATS, OBJECTIVES, SPONSORING, PROGRAM } from "../data";
 import logo from "../assets/logo.png";
 import uniLogo from "../assets/University_of_Douala_Logo.jpg";
-import uniImg from "../assets/uni.jpg";
+import uniImg from "../assets/uni.JPG";
 import Countdown from "../components/countdown";
 import { supabase } from "../lib/superbase";
 
