@@ -46,6 +46,218 @@ function Counter({ target }) {
 
 const CAT_COLORS = { Général: "#1565C0", Sport: "#F57C00", Culture: "#F9A825", Logistique: "#6B7280" };
 
+const btnPrimary = {
+  display: "inline-flex", alignItems: "center", gap: "0.5rem",
+  textDecoration: "none", background: "#1565C0", color: "#FAFAF8",
+  padding: "0.85rem 2rem", fontFamily: "'DM Mono', monospace",
+  fontSize: "0.68rem", letterSpacing: "0.12em", textTransform: "uppercase",
+  transition: "background 0.2s",
+};
+const btnOutline = {
+  display: "inline-flex", alignItems: "center", gap: "0.5rem",
+  textDecoration: "none", background: "transparent", color: "#0F0F0F",
+  padding: "0.85rem 2rem", fontFamily: "'DM Mono', monospace",
+  fontSize: "0.68rem", letterSpacing: "0.12em", textTransform: "uppercase",
+  border: "1.5px solid #0F0F0F", transition: "all 0.2s",
+};
+const linkStyle = {
+  textDecoration: "none", fontFamily: "'DM Mono', monospace",
+  fontSize: "0.6rem", letterSpacing: "0.12em", textTransform: "uppercase",
+  color: "#1565C0", display: "flex", alignItems: "center", gap: "0.3rem",
+  whiteSpace: "nowrap",
+};
+
+const CSS = `
+  *, *::before, *::after { box-sizing: border-box; }
+
+  .home-root {
+    background: #FAFAF8;
+    padding-top: 64px;
+    overflow-x: hidden;
+    width: 100%;
+  }
+
+  .bdr-b { border-bottom: 1.5px solid #0F0F0F; }
+
+  /* Every section's inner wrapper */
+  .wrap { max-width: 1280px; margin: 0 auto; width: 100%; }
+
+  /* Section header */
+  .sec-hdr {
+    padding: 1.5rem 2rem;
+    border-bottom: 1.5px solid #0F0F0F;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  /* HERO */
+  .hero-grid { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+  .hero-l {
+    padding: 4rem 3rem 3.5rem;
+    border-right: 1.5px solid #0F0F0F;
+    display: flex; flex-direction: column;
+    justify-content: space-between; gap: 2.5rem;
+    min-width: 0;
+  }
+  .hero-r { display: flex; flex-direction: column; min-width: 0; }
+
+  /* COUNTDOWN */
+  .cd-grid { display: grid; grid-template-columns: 1fr 2fr; align-items: center; width: 100%; }
+  .cd-l { padding: 2.5rem 2rem; border-right: 1.5px solid #0F0F0F; }
+  .cd-r { padding: 2rem; }
+
+  /* UNIVERSITY */
+  .uni-grid { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+  .uni-img { position: relative; overflow: hidden; min-height: 420px; }
+  .uni-r {
+    padding: 3.5rem 3rem;
+    display: flex; flex-direction: column; justify-content: center;
+    min-width: 0;
+  }
+
+  /* GALLERY */
+  .gallery-grid { display: grid; grid-template-columns: repeat(4, 1fr); width: 100%; }
+  .gal-item {
+    text-decoration: none; display: block;
+    overflow: hidden; position: relative;
+    aspect-ratio: 1; min-width: 0;
+  }
+  .gal-item:not(:last-child) { border-right: 1.5px solid #0F0F0F; }
+  .gal-item:hover .gal-overlay { opacity: 1 !important; }
+  .gal-item:hover .gal-cap { transform: translateY(0) !important; }
+
+  /* ANNOUNCEMENTS */
+  .ann-grid { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; }
+  .ann-item {
+    text-decoration: none; display: flex; flex-direction: column;
+    transition: background 0.15s; min-width: 0;
+  }
+  .ann-item:not(:last-child) { border-right: 1.5px solid #0F0F0F; }
+
+  /* OBJECTIVES */
+  .obj-grid { display: grid; grid-template-columns: repeat(4, 1fr); width: 100%; }
+  .obj-item {
+    padding: 2.5rem 2rem;
+    display: flex; flex-direction: column; min-width: 0;
+  }
+  .obj-item:not(:last-child) { border-right: 1.5px solid #0F0F0F; }
+
+  /* PROGRAMME */
+  .prog-grid { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; }
+  .prog-item { padding: 2rem; min-width: 0; }
+  .prog-r { border-right: 1.5px solid #0F0F0F; }
+  .prog-b { border-bottom: 1.5px solid #0F0F0F; }
+
+  /* SPONSORING */
+  .sp-grid { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; }
+  .sp-item { min-width: 0; }
+  .sp-item:not(:last-child) { border-right: 1.5px solid #0F0F0F; }
+  .sp-inner { padding: 2.5rem 2rem; }
+
+  /* CTA */
+  .cta-grid { display: grid; grid-template-columns: 1fr 1fr; width: 100%; min-height: 280px; }
+  .cta-l {
+    padding: 4rem 3rem;
+    border-right: 1.5px solid #0F0F0F;
+    display: flex; flex-direction: column; justify-content: space-between;
+    min-width: 0;
+  }
+  .cta-r {
+    padding: 4rem 3rem;
+    background: #1565C0;
+    display: flex; flex-direction: column; justify-content: space-between;
+    min-width: 0;
+  }
+
+  @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  /* ── TABLET ≤ 1024px ── */
+  @media (max-width: 1024px) {
+    .hero-l   { padding: 3rem 2rem 2.5rem; }
+    .uni-r    { padding: 2.5rem 2rem; }
+    .uni-img  { min-height: 300px; }
+
+    .obj-grid { grid-template-columns: repeat(2, 1fr); }
+    .obj-item:not(:last-child) { border-right: none; }
+    .obj-item:nth-child(1), .obj-item:nth-child(3) { border-right: 1.5px solid #0F0F0F !important; }
+    .obj-item:nth-child(1), .obj-item:nth-child(2) { border-bottom: 1.5px solid #0F0F0F; }
+
+    .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+    .gal-item { border-bottom: 1.5px solid #0F0F0F; }
+    .gal-item:not(:last-child) { border-right: none; }
+    .gal-item:nth-child(odd)  { border-right: 1.5px solid #0F0F0F !important; }
+    .gal-item:nth-child(even) { border-right: none !important; }
+
+    .prog-grid { grid-template-columns: repeat(2, 1fr); }
+    .prog-item.prog-r { border-right: 1.5px solid #0F0F0F; }
+    .prog-item:nth-child(2n) { border-right: none !important; }
+    .prog-item:nth-child(n+5) { border-bottom: none; }
+  }
+
+  /* ── MOBILE ≤ 768px ── */
+  @media (max-width: 768px) {
+    .hero-grid { grid-template-columns: 1fr; }
+    .hero-l {
+      border-right: none !important;
+      border-bottom: 1.5px solid #0F0F0F;
+      padding: 2.5rem 1.25rem 2rem;
+      gap: 2rem;
+    }
+
+    .cd-grid { grid-template-columns: 1fr; }
+    .cd-l { border-right: none !important; border-bottom: 1.5px solid #0F0F0F; padding: 1.75rem 1.25rem; }
+    .cd-r { padding: 1.75rem 1.25rem; }
+
+    .uni-grid { grid-template-columns: 1fr; }
+    .uni-img  { min-height: 240px; }
+    .uni-r    { padding: 2rem 1.25rem; border-top: 1.5px solid #0F0F0F; }
+
+    .ann-grid { grid-template-columns: 1fr; }
+    .ann-item:not(:last-child) { border-right: none !important; border-bottom: 1.5px solid #0F0F0F; }
+
+    .obj-grid { grid-template-columns: 1fr; }
+    .obj-item { padding: 2rem 1.25rem; border-right: none !important; border-bottom: 1.5px solid #0F0F0F; }
+
+    .prog-grid { grid-template-columns: 1fr; }
+    .prog-item { padding: 1.5rem 1.25rem; border-right: none !important; }
+    .prog-item.prog-r { border-right: none !important; }
+    .prog-item:nth-child(2n) { border-right: none !important; }
+
+    .sp-grid { grid-template-columns: 1fr; }
+    .sp-item:not(:last-child) { border-right: none !important; border-bottom: 1.5px solid #0F0F0F; }
+    .sp-inner { padding: 2rem 1.25rem !important; }
+
+    .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+    .gal-item:not(:last-child) { border-right: none; }
+    .gal-item:nth-child(odd)  { border-right: 1.5px solid #0F0F0F !important; }
+    .gal-item:nth-child(even) { border-right: none !important; }
+
+    .cta-grid { grid-template-columns: 1fr; min-height: auto; }
+    .cta-l { border-right: none !important; border-bottom: 1.5px solid #0F0F0F; padding: 2.5rem 1.25rem; }
+    .cta-r { padding: 2.5rem 1.25rem; }
+
+    .sec-hdr { padding: 1rem 1.25rem; flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+    .hide-mob { display: none !important; }
+  }
+
+  /* ── SMALL MOBILE ≤ 400px ── */
+  @media (max-width: 400px) {
+    .hero-l   { padding: 2rem 1rem 1.75rem; }
+    .cd-l, .cd-r { padding: 1.5rem 1rem !important; }
+    .uni-r    { padding: 1.75rem 1rem; }
+    .obj-item { padding: 1.75rem 1rem; }
+    .prog-item { padding: 1.25rem 1rem; }
+    .cta-l, .cta-r { padding: 2rem 1rem; }
+    .sec-hdr  { padding: 0.875rem 1rem; }
+    .sp-inner { padding: 1.75rem 1rem !important; }
+    .gallery-grid { grid-template-columns: 1fr; }
+    .gal-item { border-right: none !important; }
+  }
+`;
+
 export default function Home() {
   const [loaded, setLoaded] = useState(false);
   const [objRef, objV] = useInView();
@@ -53,7 +265,6 @@ export default function Home() {
   const [pgRef, pgV] = useInView();
   const [uniRef, uniV] = useInView();
   const [mediaRef, mediaV] = useInView();
-
   const [galleryItems, setGalleryItems] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
 
@@ -64,7 +275,7 @@ export default function Home() {
         supabase.from("announcements").select("id, title, body, author, category, pinned, created_at").order("pinned", { ascending: false }).order("created_at", { ascending: false }).limit(3),
       ]);
       if (gallery) setGalleryItems(gallery);
-      if (anns)    setAnnouncements(anns);
+      if (anns) setAnnouncements(anns);
     };
     fetchHome();
   }, []);
@@ -87,27 +298,29 @@ export default function Home() {
   };
 
   return (
-    <div style={{ background: "#FAFAF8", paddingTop: 64 }}>
+    <div className="home-root">
+      <style>{CSS}</style>
 
       {/* ── TICKER ── */}
       <div style={{ background: "#1565C0", padding: "0.45rem 0", overflow: "hidden", borderBottom: "1.5px solid #0D47A1" }}>
         <div style={{ display: "flex", gap: "4rem", animation: "ticker 22s linear infinite", whiteSpace: "nowrap", fontFamily: "'DM Mono', monospace", fontSize: "0.62rem", letterSpacing: "0.14em", color: "rgba(255,255,255,0.8)", textTransform: "uppercase" }}>
-          {Array(6).fill(null).map((_, i) => <span key={i}>★ STUD 2026 · 24–30 AVRIL · UNIVERSITÉ DE DOUALA · PERSONNEL ENGAGÉ, UNIVERSITÉ D'EXCELLENCE ·&nbsp;</span>)}
+          {Array(6).fill(null).map((_, i) => (
+            <span key={i}>★ STUD 2026 · 24–30 AVRIL · UNIVERSITÉ DE DOUALA · PERSONNEL ENGAGÉ, UNIVERSITÉ D'EXCELLENCE ·&nbsp;</span>
+          ))}
         </div>
       </div>
 
       {/* ── HERO ── */}
-      <section className="border-b">
-        <div className="container hero-grid">
-          <div className="hero-left">
+      <section className="bdr-b">
+        <div className="wrap hero-grid">
+          <div className="hero-l">
             <div>
               <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", border: "1.5px solid #0F0F0F", padding: "0.3rem 0.8rem", fontFamily: "'DM Mono', monospace", fontSize: "0.6rem", letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: "2rem", opacity: loaded ? 1 : 0, transform: loaded ? "none" : "translateY(10px)", transition: "all 0.5s ease 0.1s" }}>
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#F57C00", display: "inline-block" }} />
                 Édition 2026
               </div>
-              <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(3.5rem, 10vw, 10rem)", lineHeight: 0.88, letterSpacing: "0.02em", color: "#0F0F0F", opacity: loaded ? 1 : 0, transform: loaded ? "none" : "translateY(30px)", transition: "all 0.7s ease 0.2s" }}>
-                SE<span style={{ color: "#1565C0" }}>MA</span>INE
-                DU<br />
+              <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(3rem, 10vw, 10rem)", lineHeight: 0.88, letterSpacing: "0.02em", color: "#0F0F0F", margin: 0, opacity: loaded ? 1 : 0, transform: loaded ? "none" : "translateY(30px)", transition: "all 0.7s ease 0.2s" }}>
+                SE<span style={{ color: "#1565C0" }}>MA</span>INE DU<br />
                 TRA<span style={{ color: "#F57C00" }}>VAI</span>LLEUR
               </h1>
             </div>
@@ -116,21 +329,25 @@ export default function Home() {
                 «{META.theme}»
               </p>
               <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-                <Link to="/programme" style={btnPrimary} onMouseEnter={e => e.currentTarget.style.background = "#0D47A1"} onMouseLeave={e => e.currentTarget.style.background = "#1565C0"}>
+                <Link to="/programme" style={btnPrimary}
+                  onMouseEnter={e => e.currentTarget.style.background = "#0D47A1"}
+                  onMouseLeave={e => e.currentTarget.style.background = "#1565C0"}>
                   Voir le Programme <ArrowRight size={14} />
                 </Link>
-                <Link to="/sponsoring" style={btnOutline} onMouseEnter={e => { e.currentTarget.style.background = "#0F0F0F"; e.currentTarget.style.color = "#fff"; }} onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#0F0F0F"; }}>
+                <Link to="/sponsoring" style={btnOutline}
+                  onMouseEnter={e => { e.currentTarget.style.background = "#0F0F0F"; e.currentTarget.style.color = "#fff"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#0F0F0F"; }}>
                   Devenir Sponsor
                 </Link>
               </div>
             </div>
           </div>
 
-          <div className="hero-right" style={{ opacity: loaded ? 1 : 0, transition: "opacity 0.7s ease 0.4s" }}>
-            <div style={{ padding: "2.5rem", borderBottom: "1.5px solid #0F0F0F", display: "flex", flexDirection: "column", justifyContent: "center", gap: "1.5rem" }}>
+          <div className="hero-r" style={{ opacity: loaded ? 1 : 0, transition: "opacity 0.7s ease 0.4s" }}>
+            <div style={{ padding: "2.5rem 2rem", borderBottom: "1.5px solid #0F0F0F", display: "flex", flexDirection: "column", justifyContent: "center", gap: "1.5rem" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "1.25rem", flexWrap: "wrap" }}>
                 <img src={logo} alt="STUD 2026" style={{ height: 64, width: "auto" }} />
-                <div style={{ width: "1.5px", height: 52, background: "#EAEAE5" }} className="hide-xs" />
+                <div className="hide-mob" style={{ width: "1.5px", height: 52, background: "#EAEAE5" }} />
                 <div>
                   <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.56rem", letterSpacing: "0.2em", color: "#88887F", textTransform: "uppercase", marginBottom: 4 }}>Compte à rebours</div>
                   <Countdown compact />
@@ -159,23 +376,23 @@ export default function Home() {
       </section>
 
       {/* ── COUNTDOWN BANNER ── */}
-      <section className="border-b" style={{ background: "#EEF4FF" }}>
-        <div className="container cd-grid">
-          <div className="cd-left">
+      <section className="bdr-b" style={{ background: "#EEF4FF" }}>
+        <div className="wrap cd-grid">
+          <div className="cd-l">
             <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.58rem", letterSpacing: "0.2em", color: "#88887F", textTransform: "uppercase", marginBottom: "0.5rem" }}>Décompte officiel</div>
             <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.6rem", letterSpacing: "0.04em", lineHeight: 1.1 }}>
               AVANT L'OUVERTURE<br /><span style={{ color: "#1565C0" }}>STUD 2026</span>
             </div>
             <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.62rem", color: "#F57C00", letterSpacing: "0.1em", marginTop: "0.5rem" }}>{META.dates}</div>
           </div>
-          <div style={{ padding: "2rem" }}><Countdown /></div>
+          <div className="cd-r"><Countdown /></div>
         </div>
       </section>
 
-      {/* ── UNIVERSITY SECTION ── */}
-      <section ref={uniRef} className="border-b">
-        <div className="container uni-grid">
-          <div style={{ position: "relative", overflow: "hidden", minHeight: 320 }}>
+      {/* ── UNIVERSITY ── */}
+      <section ref={uniRef} className="bdr-b">
+        <div className="wrap uni-grid">
+          <div className="uni-img">
             <img src={uniImg} alt="Université de Douala" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: uniV ? 1 : 0.3, transform: uniV ? "scale(1)" : "scale(1.05)", transition: "all 1.2s ease" }} />
             <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(13,27,42,0.7) 0%, transparent 60%)" }} />
             <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "2rem" }}>
@@ -183,50 +400,52 @@ export default function Home() {
               <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "2rem", color: "#fff", letterSpacing: "0.04em", lineHeight: 1 }}>Université de Douala</div>
             </div>
           </div>
-          <div className="uni-right" style={{ opacity: uniV ? 1 : 0, transform: uniV ? "none" : "translateX(20px)", transition: "all 0.8s ease 0.2s" }}>
+          <div className="uni-r" style={{ opacity: uniV ? 1 : 0, transform: uniV ? "none" : "translateX(20px)", transition: "all 0.8s ease 0.2s" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "2rem", flexWrap: "wrap" }}>
               <img src={uniLogo} alt="Logo UDo" style={{ height: 52, width: "auto" }} />
-              <div style={{ width: "1.5px", height: 40, background: "#EAEAE5" }} className="hide-xs" />
+              <div className="hide-mob" style={{ width: "1.5px", height: 40, background: "#EAEAE5" }} />
               <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.56rem", letterSpacing: "0.14em", color: "#88887F", textTransform: "uppercase", lineHeight: 1.6 }}>Fondée en 1977<br />48 871 Étudiants</div>
             </div>
-            <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(2rem, 4vw, 3.5rem)", lineHeight: 1, letterSpacing: "0.02em", marginBottom: "1rem" }}>
+            <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(1.8rem, 4vw, 3.5rem)", lineHeight: 1, letterSpacing: "0.02em", marginBottom: "1rem" }}>
               UN ÉVÉNEMENT<br /><span style={{ color: "#1565C0" }}>INSTITUTIONNEL</span><br />D'ENVERGURE
             </h2>
             <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", fontSize: "0.95rem", color: "#555550", lineHeight: 1.85, maxWidth: 420, marginBottom: "2rem" }}>
               La STUD 2026 est organisée sous le haut patronage du {META.patron}, Recteur de l'Université de Douala. Elle réunit l'ensemble du personnel des 3 campus dans un esprit de célébration, de cohésion et d'excellence.
             </p>
-            <Link to="/about" style={btnPrimary} onMouseEnter={e => e.currentTarget.style.background = "#0D47A1"} onMouseLeave={e => e.currentTarget.style.background = "#1565C0"}>
+            <Link to="/about" style={btnPrimary}
+              onMouseEnter={e => e.currentTarget.style.background = "#0D47A1"}
+              onMouseLeave={e => e.currentTarget.style.background = "#1565C0"}>
               Découvrir l'Université <ArrowRight size={14} />
             </Link>
           </div>
         </div>
       </section>
 
-      {/* ── LATEST GALLERY PREVIEW ── */}
-      <section ref={mediaRef} className="border-b">
-        <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-          <div className="section-header">
+      {/* ── GALLERY PREVIEW ── */}
+      <section ref={mediaRef} className="bdr-b">
+        <div className="wrap">
+          <div className="sec-hdr">
             <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.9rem", letterSpacing: "0.04em", display: "flex", alignItems: "center", gap: "0.6rem" }}>
               <Images size={26} strokeWidth={1.5} color="#1565C0" />
-              Derniers <span style={{ color: "#1565C0" }}>&nbsp;Moments</span>
+              Derniers<span style={{ color: "#1565C0" }}>&nbsp;Moments</span>
             </span>
-            <Link to="/gallery" style={linkStyle}>
-              Voir la galerie <ArrowRight size={12} />
-            </Link>
+            <Link to="/gallery" style={linkStyle}>Voir la galerie <ArrowRight size={12} /></Link>
           </div>
-
           {galleryItems.length === 0 ? (
             <div style={{ padding: "4rem 2rem", textAlign: "center" }}>
               <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "3rem", color: "#EAEAE5", letterSpacing: "0.04em", marginBottom: "0.75rem" }}>À VENIR</div>
               <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", color: "#88887F", fontSize: "0.9rem" }}>Les photos de l'événement seront publiées ici.</p>
-              <Link to="/gallery" style={{ ...btnPrimary, display: "inline-flex", marginTop: "1.5rem" }} onMouseEnter={e => e.currentTarget.style.background = "#0D47A1"} onMouseLeave={e => e.currentTarget.style.background = "#1565C0"}>
+              <Link to="/gallery" style={{ ...btnPrimary, display: "inline-flex", marginTop: "1.5rem" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#0D47A1"}
+                onMouseLeave={e => e.currentTarget.style.background = "#1565C0"}>
                 Accéder à la galerie <ArrowRight size={14} />
               </Link>
             </div>
           ) : (
-            <div className="gallery-prev">
+            <div className="gallery-grid">
               {galleryItems.map((item, i) => (
-                <Link key={item.id} to="/gallery" className={`gallery-item ${i < galleryItems.length - 1 ? "gallery-border-r" : ""}`} style={{ opacity: mediaV ? 1 : 0, transform: mediaV ? "none" : "scale(0.97)", transition: `all 0.5s ease ${i * 0.08}s` }}>
+                <Link key={item.id} to="/gallery" className="gal-item"
+                  style={{ opacity: mediaV ? 1 : 0, transform: mediaV ? "none" : "scale(0.97)", transition: `all 0.5s ease ${i * 0.08}s` }}>
                   {item.type === "video" ? (
                     <div style={{ width: "100%", height: "100%", background: "#0D1B2A", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -241,8 +460,8 @@ export default function Home() {
                   )}
                   {item.caption && (
                     <>
-                      <div className="gallery-overlay" style={{ position: "absolute", inset: 0, background: "linear-gradient(transparent 55%, rgba(0,0,0,0.65))", opacity: 0, transition: "opacity 0.3s", pointerEvents: "none" }} />
-                      <div className="gallery-caption" style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0.75rem", fontFamily: "'Fraunces', serif", fontStyle: "italic", fontSize: "0.75rem", color: "#fff", transform: "translateY(100%)", transition: "transform 0.3s", pointerEvents: "none" }}>{item.caption}</div>
+                      <div className="gal-overlay" style={{ position: "absolute", inset: 0, background: "linear-gradient(transparent 55%, rgba(0,0,0,0.65))", opacity: 0, transition: "opacity 0.3s", pointerEvents: "none" }} />
+                      <div className="gal-cap" style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0.75rem", fontFamily: "'Fraunces', serif", fontStyle: "italic", fontSize: "0.75rem", color: "#fff", transform: "translateY(100%)", transition: "transform 0.3s", pointerEvents: "none" }}>{item.caption}</div>
                     </>
                   )}
                 </Link>
@@ -252,32 +471,28 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── LATEST ANNOUNCEMENTS PREVIEW ── */}
-      <section className="border-b">
-        <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-          <div className="section-header">
+      {/* ── ANNOUNCEMENTS PREVIEW ── */}
+      <section className="bdr-b">
+        <div className="wrap">
+          <div className="sec-hdr">
             <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.9rem", letterSpacing: "0.04em", display: "flex", alignItems: "center", gap: "0.6rem" }}>
               <Megaphone size={26} strokeWidth={1.5} color="#F57C00" />
-              Dernières <span style={{ color: "#F57C00" }}>&nbsp;Annonces</span>
+              Dernières<span style={{ color: "#F57C00" }}>&nbsp;Annonces</span>
             </span>
-            <Link to="/announcements" style={linkStyle}>
-              Toutes les annonces <ArrowRight size={12} />
-            </Link>
+            <Link to="/announcements" style={linkStyle}>Toutes les annonces <ArrowRight size={12} /></Link>
           </div>
-
           {announcements.length === 0 ? (
             <div style={{ padding: "4rem 2rem", textAlign: "center" }}>
               <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", color: "#88887F" }}>Aucune annonce pour le moment.</p>
             </div>
           ) : (
-            <div className="ann-prev">
+            <div className="ann-grid">
               {announcements.map((ann, i) => {
                 const catColor = CAT_COLORS[ann.category] || "#1565C0";
                 return (
-                  <Link key={ann.id} to="/announcements" className={`ann-item ${i < announcements.length - 1 ? "ann-border-r" : ""}`}
+                  <Link key={ann.id} to="/announcements" className="ann-item"
                     onMouseEnter={e => e.currentTarget.style.background = "#F5F8FF"}
-                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                  >
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                     <div style={{ height: 3, background: catColor }} />
                     <div style={{ padding: "1.75rem 2rem", flex: 1, display: "flex", flexDirection: "column", gap: "0.75rem" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -285,8 +500,8 @@ export default function Home() {
                         <span style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.54rem", letterSpacing: "0.12em", textTransform: "uppercase", color: catColor }}>{ann.category}</span>
                         <span style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.52rem", color: "#88887F", marginLeft: "auto" }}>{timeAgo(ann.created_at)}</span>
                       </div>
-                      <h3 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1rem", lineHeight: 1.35, color: "#0F0F0F" }}>{ann.title}</h3>
-                      <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", fontSize: "0.82rem", color: "#666660", lineHeight: 1.65 }}>
+                      <h3 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1rem", lineHeight: 1.35, color: "#0F0F0F", margin: 0 }}>{ann.title}</h3>
+                      <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", fontSize: "0.82rem", color: "#666660", lineHeight: 1.65, margin: 0 }}>
                         {ann.body.length > 120 ? ann.body.slice(0, 120) + "…" : ann.body}
                       </p>
                       <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.54rem", color: "#88887F", marginTop: "auto" }}>{ann.author}</div>
@@ -300,18 +515,20 @@ export default function Home() {
       </section>
 
       {/* ── OBJECTIVES ── */}
-      <section ref={objRef} className="border-b">
-        <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-          <div className="section-header">
+      <section ref={objRef} className="bdr-b">
+        <div className="wrap">
+          <div className="sec-hdr">
             <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.9rem", letterSpacing: "0.04em" }}>Nos Objectifs</span>
             <span style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.56rem", color: "#88887F", letterSpacing: "0.15em", textTransform: "uppercase" }}>STUD 2026 — Section 01</span>
           </div>
           <div className="obj-grid">
             {OBJECTIVES.map((o, i) => (
-              <div key={i} className={`obj-item ${i < 3 ? "obj-border-r" : ""}`} style={{ opacity: objV ? 1 : 0, transform: objV ? "none" : "translateY(20px)", transition: `all 0.6s ease ${i * 0.1}s` }}>
+              <div key={i} className="obj-item"
+                style={{ opacity: objV ? 1 : 0, transform: objV ? "none" : "translateY(20px)", transition: `all 0.6s ease ${i * 0.1}s` }}>
                 <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "4.5rem", lineHeight: 1, color: i % 2 === 0 ? "#1565C0" : "#EAEAE5", marginBottom: "1.25rem", letterSpacing: "0.02em" }}>{o.num}</div>
                 <div style={{ width: "100%", aspectRatio: "4/3", marginBottom: "1.5rem", background: i % 2 === 0 ? "#EEF4FF" : "#FFF8EE", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-                  <img src={OBJ_ILLUSTRATIONS[i]} alt={o.title} style={{ width: "85%", height: "85%", objectFit: "contain" }} onError={e => { e.target.parentElement.style.display = "none"; }} />
+                  <img src={OBJ_ILLUSTRATIONS[i]} alt={o.title} style={{ width: "85%", height: "85%", objectFit: "contain" }}
+                    onError={e => { e.target.parentElement.style.display = "none"; }} />
                 </div>
                 <h3 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1rem", marginBottom: "0.65rem", lineHeight: 1.3 }}>{o.title}</h3>
                 <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", fontSize: "0.82rem", color: "#666660", lineHeight: 1.7 }}>{o.desc}</p>
@@ -322,23 +539,22 @@ export default function Home() {
       </section>
 
       {/* ── FEATURED PROGRAMME ── */}
-      <section ref={pgRef} className="border-b">
-        <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-          <div className="section-header">
+      <section ref={pgRef} className="bdr-b">
+        <div className="wrap">
+          <div className="sec-hdr">
             <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.9rem", letterSpacing: "0.04em" }}>À l'Affiche</span>
-            <Link to="/programme" style={linkStyle}>
-              Programme complet <ArrowRight size={12} />
-            </Link>
+            <Link to="/programme" style={linkStyle}>Programme complet <ArrowRight size={12} /></Link>
           </div>
           <div className="prog-grid">
             {featuredEvents.map((ev, i) => (
-              <div key={i} className={`prog-item ${(i + 1) % 3 !== 0 ? "prog-border-r" : ""} ${i < 3 ? "prog-border-b" : ""}`} style={{ background: i === 0 ? "#0D1B2A" : "transparent", color: i === 0 ? "#FAFAF8" : "#0F0F0F", opacity: pgV ? 1 : 0, transform: pgV ? "none" : "translateY(16px)", transition: `all 0.55s ease ${i * 0.07}s` }}>
+              <div key={i}
+                className={`prog-item ${(i + 1) % 3 !== 0 ? "prog-r" : ""} ${i < 3 ? "prog-b" : ""}`}
+                style={{ background: i === 0 ? "#0D1B2A" : "transparent", color: i === 0 ? "#FAFAF8" : "#0F0F0F", opacity: pgV ? 1 : 0, transform: pgV ? "none" : "translateY(16px)", transition: `all 0.55s ease ${i * 0.07}s` }}>
                 <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.58rem", letterSpacing: "0.16em", textTransform: "uppercase", color: i === 0 ? "#F57C00" : "#88887F", marginBottom: "0.75rem" }}>{ev.date}</div>
                 <div style={{ width: "100%", height: 80, marginBottom: "0.75rem", display: "flex", alignItems: "center" }}>
                   <img src={`/assets/${ev.svg}`} alt={ev.name}
                     style={{ height: "100%", width: "auto", maxWidth: "60%", objectFit: "contain", filter: i === 0 ? "brightness(0) invert(1)" : "none", opacity: i === 0 ? 0.7 : 1 }}
-                    onError={e => { e.target.style.display = "none"; }}
-                  />
+                    onError={e => { e.target.style.display = "none"; }} />
                 </div>
                 <h3 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1.05rem", lineHeight: 1.3, marginBottom: "0.5rem" }}>{ev.name}</h3>
                 <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", fontSize: "0.82rem", lineHeight: 1.65, color: i === 0 ? "rgba(255,255,255,0.5)" : "#666660" }}>{ev.description}</p>
@@ -349,19 +565,18 @@ export default function Home() {
       </section>
 
       {/* ── SPONSORING PREVIEW ── */}
-      <section ref={spRef} className="border-b">
-        <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-          <div className="section-header">
+      <section ref={spRef} className="bdr-b">
+        <div className="wrap">
+          <div className="sec-hdr">
             <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.9rem", letterSpacing: "0.04em" }}>Packages Sponsoring</span>
-            <Link to="/sponsoring" style={linkStyle}>
-              Voir les offres <ArrowRight size={12} />
-            </Link>
+            <Link to="/sponsoring" style={linkStyle}>Voir les offres <ArrowRight size={12} /></Link>
           </div>
           <div className="sp-grid">
             {SPONSORING.map((offer, i) => (
-              <div key={i} className={`sp-item ${i < 2 ? "sp-border-r" : ""}`} style={{ opacity: spV ? 1 : 0, transform: spV ? "none" : "translateY(20px)", transition: `all 0.6s ease ${i * 0.15}s` }}>
+              <div key={i} className="sp-item"
+                style={{ opacity: spV ? 1 : 0, transform: spV ? "none" : "translateY(20px)", transition: `all 0.6s ease ${i * 0.15}s` }}>
                 <div style={{ height: 4, background: offer.color }} />
-                <div style={{ padding: "2.5rem 2rem" }}>
+                <div className="sp-inner">
                   <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.58rem", letterSpacing: "0.18em", color: offer.color, marginBottom: "0.4rem" }}>{offer.badge} OFFRE {offer.tier.toUpperCase()}</div>
                   <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(2rem, 3.5vw, 3.2rem)", lineHeight: 1, marginBottom: "0.2rem", letterSpacing: "0.02em" }}>{offer.price}</div>
                   <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.6rem", color: "#88887F", letterSpacing: "0.1em", marginBottom: "2rem" }}>{offer.currency}</div>
@@ -371,12 +586,16 @@ export default function Home() {
                         <span style={{ color: offer.color, flexShrink: 0, fontWeight: 700 }}>—</span>{v}
                       </div>
                     ))}
-                    {offer.visibility.length > 3 && <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.58rem", color: "#88887F" }}>+{offer.visibility.length - 3} avantages…</div>}
+                    {offer.visibility.length > 3 && (
+                      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.58rem", color: "#88887F" }}>+{offer.visibility.length - 3} avantages…</div>
+                    )}
                   </div>
-                  <Link to="/sponsoring" style={{ display: "block", textAlign: "center", textDecoration: "none", border: `1.5px solid ${offer.color}`, color: offer.color, padding: "0.75rem 1.5rem", fontFamily: "'DM Mono', monospace", fontSize: "0.66rem", letterSpacing: "0.12em", textTransform: "uppercase", transition: "all 0.2s" }}
+                  <Link to="/sponsoring"
+                    style={{ display: "block", textAlign: "center", textDecoration: "none", border: `1.5px solid ${offer.color}`, color: offer.color, padding: "0.75rem 1.5rem", fontFamily: "'DM Mono', monospace", fontSize: "0.66rem", letterSpacing: "0.12em", textTransform: "uppercase", transition: "all 0.2s" }}
                     onMouseEnter={e => { e.currentTarget.style.background = offer.color; e.currentTarget.style.color = "#fff"; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = offer.color; }}
-                  >En savoir plus →</Link>
+                    onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = offer.color; }}>
+                    En savoir plus →
+                  </Link>
                 </div>
               </div>
             ))}
@@ -386,25 +605,30 @@ export default function Home() {
 
       {/* ── BOTTOM CTA ── */}
       <section>
-        <div className="container cta-grid" style={{ minHeight: 280 }}>
-          <div className="cta-left">
+        <div className="wrap cta-grid">
+          <div className="cta-l">
             <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.56rem", letterSpacing: "0.2em", color: "#88887F", textTransform: "uppercase" }}>En savoir plus</div>
             <div>
               <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(2.5rem, 5vw, 5rem)", lineHeight: 1, letterSpacing: "0.02em", marginBottom: "1.5rem" }}>
                 À PROPOS DE<br /><span style={{ color: "#1565C0" }}>L'UNIVERSITÉ</span>
               </h2>
-              <Link to="/about" style={btnOutline} onMouseEnter={e => { e.currentTarget.style.background = "#0F0F0F"; e.currentTarget.style.color = "#FAFAF8"; }} onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#0F0F0F"; }}>
+              <Link to="/about" style={btnOutline}
+                onMouseEnter={e => { e.currentTarget.style.background = "#0F0F0F"; e.currentTarget.style.color = "#FAFAF8"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#0F0F0F"; }}>
                 Découvrir l'Histoire →
               </Link>
             </div>
           </div>
-          <div className="cta-right">
+          <div className="cta-r">
             <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.56rem", letterSpacing: "0.2em", color: "rgba(255,255,255,0.4)", textTransform: "uppercase" }}>Partenariat</div>
             <div>
               <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(2.5rem, 5vw, 5rem)", lineHeight: 1, letterSpacing: "0.02em", color: "#FAFAF8", marginBottom: "1.5rem" }}>
                 DEVENEZ<br />SPONSOR
               </h2>
-              <Link to="/sponsoring" style={{ ...btnOutline, borderColor: "#FAFAF8", color: "#FAFAF8" }} onMouseEnter={e => { e.currentTarget.style.background = "#FAFAF8"; e.currentTarget.style.color = "#1565C0"; }} onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#FAFAF8"; }}>
+              <Link to="/sponsoring"
+                style={{ ...btnOutline, borderColor: "#FAFAF8", color: "#FAFAF8" }}
+                onMouseEnter={e => { e.currentTarget.style.background = "#FAFAF8"; e.currentTarget.style.color = "#1565C0"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#FAFAF8"; }}>
                 Voir les offres →
               </Link>
             </div>
@@ -412,241 +636,6 @@ export default function Home() {
         </div>
       </section>
 
-      <style>{`
-        /* ── BASE ── */
-        .border-b { border-bottom: 1.5px solid #0F0F0F; }
-        .container { max-width: 1280px; margin: 0 auto; }
-
-        /* ── SECTION HEADER ── */
-        .section-header {
-          padding: 1.5rem 2rem;
-          border-bottom: 1.5px solid #0F0F0F;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          flex-wrap: wrap;
-          gap: 0.5rem;
-        }
-
-        /* ── HERO ── */
-        .hero-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-        }
-        .hero-left {
-          padding: 4rem 3rem 3.5rem;
-          border-right: 1.5px solid #0F0F0F;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          gap: 2.5rem;
-        }
-        .hero-right {
-          display: flex;
-          flex-direction: column;
-        }
-
-        /* ── COUNTDOWN ── */
-        .cd-grid {
-          display: grid;
-          grid-template-columns: 1fr 2fr;
-          align-items: center;
-        }
-        .cd-left {
-          padding: 2.5rem 2rem;
-          border-right: 1.5px solid #0F0F0F;
-        }
-
-        /* ── UNIVERSITY ── */
-        .uni-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-        }
-        .uni-right {
-          padding: 3.5rem 3rem;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-        }
-
-        /* ── GALLERY ── */
-        .gallery-prev {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-        }
-        .gallery-item {
-          text-decoration: none;
-          display: block;
-          overflow: hidden;
-          position: relative;
-          aspect-ratio: 1;
-        }
-        .gallery-border-r { border-right: 1.5px solid #0F0F0F; }
-        .gallery-item:hover .gallery-overlay { opacity: 1 !important; }
-        .gallery-item:hover .gallery-caption { transform: translateY(0) !important; }
-
-        /* ── ANNOUNCEMENTS ── */
-        .ann-prev {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-        }
-        .ann-item {
-          text-decoration: none;
-          display: flex;
-          flex-direction: column;
-          transition: background 0.15s;
-        }
-        .ann-border-r { border-right: 1.5px solid #0F0F0F; }
-
-        /* ── OBJECTIVES ── */
-        .obj-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-        }
-        .obj-item {
-          padding: 2.5rem 2rem;
-          display: flex;
-          flex-direction: column;
-        }
-        .obj-border-r { border-right: 1.5px solid #0F0F0F; }
-
-        /* ── PROGRAMME ── */
-        .prog-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-        }
-        .prog-item { padding: 2rem; }
-        .prog-border-r { border-right: 1.5px solid #0F0F0F; }
-        .prog-border-b { border-bottom: 1.5px solid #0F0F0F; }
-
-        /* ── SPONSORING ── */
-        .sp-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-        }
-        .sp-item {}
-        .sp-border-r { border-right: 1.5px solid #0F0F0F; }
-
-        /* ── CTA ── */
-        .cta-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-        }
-        .cta-left {
-          padding: 4rem 3rem;
-          border-right: 1.5px solid #0F0F0F;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-        }
-        .cta-right {
-          padding: 4rem 3rem;
-          background: #1565C0;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-        }
-
-        /* ── TICKER ── */
-        @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-
-        /* ── TABLET (≤ 1024px) ── */
-        @media (max-width: 1024px) {
-          .hero-left { padding: 3rem 2rem 2.5rem; }
-          .hero-right {}
-          .uni-right { padding: 2.5rem 2rem; }
-          .obj-grid { grid-template-columns: repeat(2, 1fr); }
-          .obj-item:nth-child(1),
-          .obj-item:nth-child(3) { border-right: 1.5px solid #0F0F0F; }
-          .obj-item:nth-child(2),
-          .obj-item:nth-child(4) { border-right: none !important; }
-          .obj-item:nth-child(1),
-          .obj-item:nth-child(2) { border-bottom: 1.5px solid #0F0F0F; }
-          .obj-border-r { border-right: none; }
-          .gallery-prev { grid-template-columns: repeat(2, 1fr); }
-          .gallery-item:nth-child(odd) { border-right: 1.5px solid #0F0F0F; }
-          .gallery-item { border-bottom: 1.5px solid #0F0F0F; }
-          .gallery-border-r { border-right: none; }
-          .prog-grid { grid-template-columns: repeat(2, 1fr); }
-          .prog-item:nth-child(2) { border-right: none !important; }
-          .prog-item:nth-child(4) { border-right: none !important; }
-          .prog-item:nth-child(5) { border-bottom: none; }
-          .prog-item:nth-child(6) { border-bottom: none; }
-          .prog-border-r { border-right: 1.5px solid #0F0F0F; }
-        }
-
-        /* ── SMALL TABLET / LARGE MOBILE (≤ 900px) ── */
-        @media (max-width: 900px) {
-          .hero-grid { grid-template-columns: 1fr; }
-          .hero-left { border-right: none !important; border-bottom: 1.5px solid #0F0F0F; padding: 3rem 1.5rem 2.5rem; }
-          .hero-right {}
-          .cd-grid { grid-template-columns: 1fr; }
-          .cd-left { border-right: none !important; border-bottom: 1.5px solid #0F0F0F; }
-          .uni-grid { grid-template-columns: 1fr; }
-          .uni-right { border-top: 1.5px solid #0F0F0F; }
-          .sp-grid { grid-template-columns: 1fr; }
-          .sp-item { border-right: none !important; border-bottom: 1.5px solid #0F0F0F; }
-          .sp-border-r { border-right: none; }
-          .cta-grid { grid-template-columns: 1fr; }
-          .cta-left { border-right: none !important; border-bottom: 1.5px solid #0F0F0F; padding: 3rem 1.5rem; }
-          .cta-right { padding: 3rem 1.5rem; }
-          .ann-prev { grid-template-columns: 1fr; }
-          .ann-item { border-right: none !important; border-bottom: 1.5px solid #0F0F0F; }
-          .ann-border-r { border-right: none; }
-          .section-header { padding: 1.25rem 1.5rem; }
-        }
-
-        /* ── MOBILE (≤ 600px) ── */
-        @media (max-width: 600px) {
-          .hero-left { padding: 2rem 1rem 2rem; gap: 2rem; }
-          .obj-grid { grid-template-columns: 1fr; }
-          .obj-item { border-right: none !important; border-bottom: 1.5px solid #0F0F0F; }
-          .obj-border-r { border-right: none; }
-          .prog-grid { grid-template-columns: 1fr; }
-          .prog-item { border-right: none !important; }
-          .prog-border-r { border-right: none; }
-          .gallery-prev { grid-template-columns: repeat(2, 1fr); }
-          .gallery-item { border-right: none !important; }
-          .gallery-item:nth-child(odd) { border-right: 1.5px solid #0F0F0F !important; }
-          .section-header { padding: 1rem; flex-direction: column; align-items: flex-start; gap: 0.75rem; }
-          .hide-xs { display: none; }
-          .cta-left, .cta-right { padding: 2.5rem 1rem; }
-          .uni-right { padding: 2rem 1rem; }
-          .sp-item > div:last-child { padding: 2rem 1rem; }
-          .obj-item { padding: 2rem 1rem; }
-          .prog-item { padding: 1.5rem 1rem; }
-        }
-
-        /* ── EXTRA SMALL (≤ 380px) ── */
-        @media (max-width: 380px) {
-          .gallery-prev { grid-template-columns: 1fr; }
-          .gallery-item { border-right: none !important; }
-          .gallery-item:nth-child(odd) { border-right: none !important; }
-        }
-      `}</style>
     </div>
   );
 }
-
-const btnPrimary = {
-  display: "inline-flex", alignItems: "center", gap: "0.5rem",
-  textDecoration: "none", background: "#1565C0", color: "#FAFAF8",
-  padding: "0.85rem 2rem", fontFamily: "'DM Mono', monospace",
-  fontSize: "0.68rem", letterSpacing: "0.12em", textTransform: "uppercase",
-  transition: "background 0.2s",
-};
-
-const btnOutline = {
-  display: "inline-flex", alignItems: "center", gap: "0.5rem",
-  textDecoration: "none", background: "transparent", color: "#0F0F0F",
-  padding: "0.85rem 2rem", fontFamily: "'DM Mono', monospace",
-  fontSize: "0.68rem", letterSpacing: "0.12em", textTransform: "uppercase",
-  border: "1.5px solid #0F0F0F", transition: "all 0.2s",
-};
-
-const linkStyle = {
-  textDecoration: "none", fontFamily: "'DM Mono', monospace",
-  fontSize: "0.6rem", letterSpacing: "0.12em", textTransform: "uppercase",
-  color: "#1565C0", display: "flex", alignItems: "center", gap: "0.3rem",
-  whiteSpace: "nowrap",
-};
