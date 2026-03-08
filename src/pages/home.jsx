@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Play, Pin, Images, Megaphone } from "lucide-react";
+import { ArrowRight, Play, Pin, Images, Megaphone, Star } from "lucide-react";
 import { META, STATS, OBJECTIVES, SPONSORING, PROGRAM } from "../data";
 import logo from "../assets/logo.png";
 import uniLogo from "../assets/University_of_Douala_Logo.jpg";
@@ -32,7 +32,7 @@ function Counter({ target }) {
   useEffect(() => {
     if (!v) return;
     let cur = 0;
-    const dur = 1600, step = 16;
+    const dur = 1800, step = 16;
     const inc = target / (dur / step);
     const t = setInterval(() => {
       cur += inc;
@@ -46,215 +46,549 @@ function Counter({ target }) {
 
 const CAT_COLORS = { Général: "#1565C0", Sport: "#F57C00", Culture: "#F9A825", Logistique: "#6B7280" };
 
-const btnPrimary = {
-  display: "inline-flex", alignItems: "center", gap: "0.5rem",
-  textDecoration: "none", background: "#1565C0", color: "#FAFAF8",
-  padding: "0.85rem 2rem", fontFamily: "'DM Mono', monospace",
-  fontSize: "0.68rem", letterSpacing: "0.12em", textTransform: "uppercase",
-  transition: "background 0.2s",
-};
-const btnOutline = {
-  display: "inline-flex", alignItems: "center", gap: "0.5rem",
-  textDecoration: "none", background: "transparent", color: "#0F0F0F",
-  padding: "0.85rem 2rem", fontFamily: "'DM Mono', monospace",
-  fontSize: "0.68rem", letterSpacing: "0.12em", textTransform: "uppercase",
-  border: "1.5px solid #0F0F0F", transition: "all 0.2s",
-};
-const linkStyle = {
-  textDecoration: "none", fontFamily: "'DM Mono', monospace",
-  fontSize: "0.6rem", letterSpacing: "0.12em", textTransform: "uppercase",
-  color: "#1565C0", display: "flex", alignItems: "center", gap: "0.3rem",
-  whiteSpace: "nowrap",
-};
-
 const CSS = `
-  *, *::before, *::after { box-sizing: border-box; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue: #1565C0;
+    --blue-dark: #0D47A1;
+    --blue-light: #EEF4FF;
+    --orange: #F57C00;
+    --ink: #0A0A0A;
+    --ink-soft: #3D3D38;
+    --muted: #88887F;
+    --rule: rgba(10,10,10,0.12);
+    --cream: #FAFAF8;
+    --warm: #F5F0E8;
+  }
 
   .home-root {
-    background: #FAFAF8;
+    background: var(--cream);
     padding-top: 64px;
     overflow-x: hidden;
     width: 100%;
+    font-size: 16px;
   }
 
-  .bdr-b { border-bottom: 1.5px solid #0F0F0F; }
-
-  /* Every section's inner wrapper */
-  .wrap { max-width: 1280px; margin: 0 auto; width: 100%; }
-
-  /* Section header */
-  .sec-hdr {
-    padding: 1.5rem 2rem;
-    border-bottom: 1.5px solid #0F0F0F;
+  /* ── TICKER ── */
+  .ticker-wrap {
+    background: var(--ink);
+    padding: 0.55rem 0;
+    overflow: hidden;
+    border-bottom: none;
+  }
+  .ticker-inner {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 5rem;
+    animation: ticker 28s linear infinite;
+    white-space: nowrap;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.18em;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
   }
+  .ticker-inner span { color: var(--orange); }
+  @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
-  /* HERO */
-  .hero-grid { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+  /* ── HERO ── */
+  .hero-section {
+    border-bottom: 1px solid var(--rule);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-section::before {
+    content: '';
+    position: absolute;
+    top: -180px; right: -120px;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(21,101,192,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
   .hero-l {
-    padding: 4rem 3rem 3.5rem;
-    border-right: 1.5px solid #0F0F0F;
+    padding: 5rem 3.5rem 4rem;
+    border-right: 1px solid var(--rule);
     display: flex; flex-direction: column;
-    justify-content: space-between; gap: 2.5rem;
-    min-width: 0;
+    justify-content: space-between; gap: 3rem;
   }
-  .hero-r { display: flex; flex-direction: column; min-width: 0; }
+  .hero-r {
+    display: flex; flex-direction: column;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: var(--ink); color: rgba(255,255,255,0.85);
+    padding: 0.35rem 0.9rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem; letter-spacing: 0.2em; text-transform: uppercase;
+    margin-bottom: 2.5rem;
+  }
+  .hero-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--orange); display: inline-block; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .hero-h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(4.2rem, 9vw, 9.5rem);
+    line-height: 0.87;
+    letter-spacing: 0.015em;
+    color: var(--ink);
+  }
+  .hero-h1 em { font-style: normal; color: var(--blue); }
+  .hero-h1 strong { font-weight: inherit; color: var(--orange); }
+  .hero-theme {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 0.95rem;
+    color: var(--muted);
+    line-height: 1.8;
+    max-width: 380px;
+    border-left: 2px solid var(--orange);
+    padding-left: 1rem;
+  }
+  .hero-cta { display: flex; gap: 0.875rem; flex-wrap: wrap; }
 
-  /* COUNTDOWN */
-  .cd-grid { display: grid; grid-template-columns: 1fr 2fr; align-items: center; width: 100%; }
-  .cd-l { padding: 2.5rem 2rem; border-right: 1.5px solid #0F0F0F; }
-  .cd-r { padding: 2rem; }
+  /* Hero right top */
+  .hero-r-top {
+    padding: 2.5rem 2.5rem 2rem;
+    border-bottom: 1px solid var(--rule);
+    display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;
+  }
+  .hero-divider { width: 1px; height: 48px; background: var(--rule); }
+  .cd-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.52rem; letter-spacing: 0.2em;
+    color: var(--muted); text-transform: uppercase; margin-bottom: 5px;
+  }
 
-  /* UNIVERSITY */
-  .uni-grid { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
-  .uni-img { position: relative; overflow: hidden; min-height: 420px; }
+  /* Stats grid */
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; flex: 1; }
+  .stat-cell {
+    padding: 1.875rem 2.5rem;
+    border-top: 1px solid var(--rule);
+    position: relative; overflow: hidden;
+  }
+  .stat-cell:nth-child(odd) { border-right: 1px solid var(--rule); }
+  .stat-cell::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--blue), transparent);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .stat-cell:hover::after { opacity: 1; }
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2rem, 3.2vw, 3.5rem);
+    line-height: 1; letter-spacing: 0.02em;
+  }
+  .stat-lbl {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.54rem; letter-spacing: 0.16em;
+    color: var(--muted); text-transform: uppercase; margin-top: 4px;
+  }
+  .hero-patron {
+    padding: 1.25rem 2.5rem;
+    border-top: 1px solid var(--rule);
+    display: flex; align-items: center; gap: 1rem;
+    background: var(--warm);
+  }
+  .patron-name {
+    font-family: 'Fraunces', serif;
+    font-weight: 700; font-size: 0.8rem; color: var(--ink);
+  }
+  .patron-role {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.52rem; letter-spacing: 0.12em;
+    color: var(--muted); text-transform: uppercase; margin-top: 2px;
+  }
+
+  /* ── SECTION HEADER ── */
+  .sec-hdr {
+    max-width: 1280px; margin: 0 auto;
+    padding: 1.5rem 2.5rem;
+    border-bottom: 1px solid var(--rule);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 0.75rem;
+  }
+  .sec-hdr-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.75rem; letter-spacing: 0.06em;
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+  .sec-link {
+    text-decoration: none;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--blue); display: flex; align-items: center; gap: 0.35rem;
+    padding: 0.4rem 0.8rem; border: 1px solid var(--blue);
+    transition: all 0.2s;
+  }
+  .sec-link:hover { background: var(--blue); color: #fff; }
+
+  /* ── UNIVERSITY ── */
+  .uni-section { border-bottom: 1px solid var(--rule); }
+  .uni-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    max-width: 1280px; margin: 0 auto;
+  }
+  .uni-img-wrap {
+    position: relative; overflow: hidden; min-height: 480px;
+  }
+  .uni-img-wrap img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    transition: transform 1.4s ease;
+  }
+  .uni-img-wrap:hover img { transform: scale(1.04); }
+  .uni-img-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(160deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.1) 50%, transparent 100%);
+  }
+  .uni-img-caption {
+    position: absolute; bottom: 0; left: 0; right: 0; padding: 2.5rem 2.5rem 2rem;
+  }
+  .uni-img-city {
+    font-family: 'DM Mono', monospace; font-size: 0.54rem;
+    letter-spacing: 0.2em; color: rgba(255,255,255,0.45);
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+  .uni-img-name {
+    font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem;
+    color: #fff; letter-spacing: 0.04em; line-height: 1;
+  }
   .uni-r {
-    padding: 3.5rem 3rem;
+    padding: 4rem 3.5rem;
     display: flex; flex-direction: column; justify-content: center;
-    min-width: 0;
+    background: var(--cream);
+  }
+  .uni-top {
+    display: flex; align-items: center; gap: 1.25rem;
+    margin-bottom: 2.5rem; flex-wrap: wrap;
+  }
+  .uni-meta {
+    font-family: 'DM Mono', monospace; font-size: 0.56rem;
+    letter-spacing: 0.14em; color: var(--muted); text-transform: uppercase;
+    line-height: 1.8;
+  }
+  .uni-h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2rem, 4vw, 3.8rem);
+    line-height: 0.95; letter-spacing: 0.02em; margin-bottom: 1.25rem;
+  }
+  .uni-desc {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: 0.95rem; color: var(--ink-soft); line-height: 1.9;
+    max-width: 420px; margin-bottom: 2.5rem;
   }
 
-  /* GALLERY */
-  .gallery-grid { display: grid; grid-template-columns: repeat(4, 1fr); width: 100%; }
+  /* ── GALLERY ── */
+  .gallery-section { border-bottom: 1px solid var(--rule); }
+  .gallery-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    max-width: 1280px; margin: 0 auto;
+  }
   .gal-item {
     text-decoration: none; display: block;
     overflow: hidden; position: relative;
-    aspect-ratio: 1; min-width: 0;
+    aspect-ratio: 1;
   }
-  .gal-item:not(:last-child) { border-right: 1.5px solid #0F0F0F; }
-  .gal-item:hover .gal-overlay { opacity: 1 !important; }
-  .gal-item:hover .gal-cap { transform: translateY(0) !important; }
+  .gal-item + .gal-item { border-left: 1px solid var(--rule); }
+  .gal-item img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform 0.5s cubic-bezier(0.25,0.46,0.45,0.94);
+    display: block;
+  }
+  .gal-item:hover img { transform: scale(1.08); }
+  .gal-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(transparent 45%, rgba(0,0,0,0.7));
+    opacity: 0; transition: opacity 0.35s;
+  }
+  .gal-item:hover .gal-overlay { opacity: 1; }
+  .gal-cap {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 1rem 1.25rem;
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: 0.78rem; color: #fff;
+    transform: translateY(8px); opacity: 0;
+    transition: all 0.35s;
+  }
+  .gal-item:hover .gal-cap { transform: translateY(0); opacity: 1; }
+  .gallery-empty {
+    grid-column: 1 / -1; padding: 6rem 2rem; text-align: center;
+  }
 
-  /* ANNOUNCEMENTS */
-  .ann-grid { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; }
+  /* ── ANNOUNCEMENTS ── */
+  .ann-section { border-bottom: 1px solid var(--rule); }
+  .ann-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    max-width: 1280px; margin: 0 auto;
+  }
   .ann-item {
     text-decoration: none; display: flex; flex-direction: column;
-    transition: background 0.15s; min-width: 0;
+    transition: background 0.2s;
   }
-  .ann-item:not(:last-child) { border-right: 1.5px solid #0F0F0F; }
+  .ann-item + .ann-item { border-left: 1px solid var(--rule); }
+  .ann-item:hover { background: var(--blue-light); }
+  .ann-bar { height: 3px; }
+  .ann-body { padding: 2rem 2.5rem; flex: 1; display: flex; flex-direction: column; gap: 0.75rem; }
+  .ann-meta { display: flex; align-items: center; gap: 0.5rem; }
+  .ann-cat {
+    font-family: 'DM Mono', monospace; font-size: 0.52rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .ann-time {
+    font-family: 'DM Mono', monospace; font-size: 0.5rem;
+    color: var(--muted); margin-left: auto;
+  }
+  .ann-title {
+    font-family: 'Fraunces', serif; font-weight: 700;
+    font-size: 1rem; line-height: 1.4; color: var(--ink);
+  }
+  .ann-excerpt {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: 0.83rem; color: var(--ink-soft); line-height: 1.7;
+    flex: 1;
+  }
+  .ann-author {
+    font-family: 'DM Mono', monospace; font-size: 0.52rem;
+    color: var(--muted); padding-top: 0.5rem;
+    border-top: 1px solid var(--rule);
+  }
 
-  /* OBJECTIVES */
-  .obj-grid { display: grid; grid-template-columns: repeat(4, 1fr); width: 100%; }
+  /* ── OBJECTIVES ── */
+  .obj-section { border-bottom: 1px solid var(--rule); }
+  .obj-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    max-width: 1280px; margin: 0 auto;
+  }
   .obj-item {
-    padding: 2.5rem 2rem;
-    display: flex; flex-direction: column; min-width: 0;
+    padding: 3rem 2.25rem;
+    display: flex; flex-direction: column;
+    transition: background 0.25s;
+    position: relative; overflow: hidden;
   }
-  .obj-item:not(:last-child) { border-right: 1.5px solid #0F0F0F; }
+  .obj-item + .obj-item { border-left: 1px solid var(--rule); }
+  .obj-item:hover { background: var(--warm); }
+  .obj-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 5rem; line-height: 1;
+    margin-bottom: 1.5rem; letter-spacing: 0.02em;
+    transition: transform 0.3s;
+  }
+  .obj-item:hover .obj-num { transform: translateX(4px); }
+  .obj-illus {
+    width: 100%; aspect-ratio: 4/3; margin-bottom: 1.75rem;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; border-radius: 2px;
+  }
+  .obj-illus img { width: 82%; height: 82%; object-fit: contain; }
+  .obj-title {
+    font-family: 'Fraunces', serif; font-weight: 700;
+    font-size: 1rem; line-height: 1.3; margin-bottom: 0.65rem;
+  }
+  .obj-desc {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: 0.82rem; color: var(--ink-soft); line-height: 1.75;
+  }
 
-  /* PROGRAMME */
-  .prog-grid { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; }
-  .prog-item { padding: 2rem; min-width: 0; }
-  .prog-r { border-right: 1.5px solid #0F0F0F; }
-  .prog-b { border-bottom: 1.5px solid #0F0F0F; }
+  /* ── PROGRAMME ── */
+  .prog-section { border-bottom: 1px solid var(--rule); }
+  .prog-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    max-width: 1280px; margin: 0 auto;
+  }
+  .prog-item {
+    padding: 2.25rem 2.5rem;
+    transition: background 0.2s;
+  }
+  .prog-item:hover { background: var(--warm); }
+  .prog-item--dark { background: var(--ink) !important; }
+  .prog-item--dark:hover { background: #1a1a16 !important; }
+  .prog-item + .prog-item { border-left: 1px solid var(--rule); }
+  .prog-row-b { border-bottom: 1px solid var(--rule); }
+  .prog-date {
+    font-family: 'DM Mono', monospace; font-size: 0.56rem;
+    letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 1rem;
+  }
+  .prog-img { width: 100%; height: 72px; margin-bottom: 0.875rem; display: flex; align-items: center; }
+  .prog-img img { height: 100%; width: auto; max-width: 55%; object-fit: contain; }
+  .prog-name {
+    font-family: 'Fraunces', serif; font-weight: 700;
+    font-size: 1.05rem; line-height: 1.35; margin-bottom: 0.5rem;
+  }
+  .prog-desc {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: 0.82rem; line-height: 1.7;
+  }
 
-  /* SPONSORING */
-  .sp-grid { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; }
-  .sp-item { min-width: 0; }
-  .sp-item:not(:last-child) { border-right: 1.5px solid #0F0F0F; }
-  .sp-inner { padding: 2.5rem 2rem; }
+  /* ── SPONSORING ── */
+  .sp-section { border-bottom: 1px solid var(--rule); }
+  .sp-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    max-width: 1280px; margin: 0 auto;
+  }
+  .sp-item { }
+  .sp-item + .sp-item { border-left: 1px solid var(--rule); }
+  .sp-top-bar { height: 4px; }
+  .sp-inner { padding: 2.75rem 2.5rem; }
+  .sp-tier {
+    font-family: 'DM Mono', monospace; font-size: 0.56rem;
+    letter-spacing: 0.2em; margin-bottom: 0.4rem; text-transform: uppercase;
+  }
+  .sp-price {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.2rem, 3.5vw, 3.5rem);
+    line-height: 1; letter-spacing: 0.02em; margin-bottom: 0.2rem;
+  }
+  .sp-currency {
+    font-family: 'DM Mono', monospace; font-size: 0.58rem;
+    color: var(--muted); letter-spacing: 0.1em; margin-bottom: 2rem;
+  }
+  .sp-features { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 2rem; }
+  .sp-feature {
+    display: flex; gap: 0.65rem;
+    font-family: 'Fraunces', serif; font-size: 0.84rem;
+    color: var(--ink-soft); line-height: 1.4;
+  }
+  .sp-more {
+    font-family: 'DM Mono', monospace; font-size: 0.56rem;
+    color: var(--muted);
+  }
+  .sp-cta {
+    display: block; text-align: center; text-decoration: none;
+    padding: 0.85rem 1.5rem;
+    font-family: 'DM Mono', monospace; font-size: 0.64rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    border: 1.5px solid; transition: all 0.2s;
+  }
 
-  /* CTA */
-  .cta-grid { display: grid; grid-template-columns: 1fr 1fr; width: 100%; min-height: 280px; }
-  .cta-l {
-    padding: 4rem 3rem;
-    border-right: 1.5px solid #0F0F0F;
+  /* ── CTA ── */
+  .cta-section { }
+  .cta-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    max-width: 1280px; margin: 0 auto;
+    min-height: 300px;
+  }
+  .cta-l, .cta-r {
+    padding: 4.5rem 3.5rem;
     display: flex; flex-direction: column; justify-content: space-between;
-    min-width: 0;
   }
-  .cta-r {
-    padding: 4rem 3rem;
-    background: #1565C0;
-    display: flex; flex-direction: column; justify-content: space-between;
-    min-width: 0;
+  .cta-l { border-right: 1px solid var(--rule); }
+  .cta-r { background: var(--ink); }
+  .cta-label {
+    font-family: 'DM Mono', monospace; font-size: 0.54rem;
+    letter-spacing: 0.22em; text-transform: uppercase;
+  }
+  .cta-h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.5rem, 5vw, 5.5rem);
+    line-height: 0.92; letter-spacing: 0.02em; margin-bottom: 2rem;
   }
 
-  @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  /* ── BUTTONS ── */
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    text-decoration: none; background: var(--blue); color: #FAFAF8;
+    padding: 0.9rem 2.25rem;
+    font-family: 'DM Mono', monospace; font-size: 0.64rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    transition: background 0.2s, transform 0.2s;
+    border: none; cursor: pointer;
+  }
+  .btn-primary:hover { background: var(--blue-dark); transform: translateX(2px); }
+  .btn-outline {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    text-decoration: none; background: transparent; color: var(--ink);
+    padding: 0.9rem 2.25rem;
+    font-family: 'DM Mono', monospace; font-size: 0.64rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    border: 1.5px solid var(--ink); transition: all 0.2s;
+  }
+  .btn-outline:hover { background: var(--ink); color: var(--cream); }
+  .btn-outline--white {
+    border-color: rgba(255,255,255,0.4); color: rgba(255,255,255,0.85);
+  }
+  .btn-outline--white:hover { background: rgba(255,255,255,0.1); border-color: #fff; color: #fff; }
 
-  /* ── TABLET ≤ 1024px ── */
+  /* Divider */
+  .v-divider { width: 1px; height: 44px; background: var(--rule); }
+
+  /* ─────── TABLET ≤ 1024px ─────── */
   @media (max-width: 1024px) {
-    .hero-l   { padding: 3rem 2rem 2.5rem; }
-    .uni-r    { padding: 2.5rem 2rem; }
-    .uni-img  { min-height: 300px; }
-
+    .hero-l { padding: 3.5rem 2.5rem 3rem; }
+    .uni-r { padding: 3rem 2.5rem; }
+    .uni-img-wrap { min-height: 380px; }
     .obj-grid { grid-template-columns: repeat(2, 1fr); }
-    .obj-item:not(:last-child) { border-right: none; }
-    .obj-item:nth-child(1), .obj-item:nth-child(3) { border-right: 1.5px solid #0F0F0F !important; }
-    .obj-item:nth-child(1), .obj-item:nth-child(2) { border-bottom: 1.5px solid #0F0F0F; }
-
+    .obj-item + .obj-item { border-left: none; }
+    .obj-item:nth-child(odd) { border-right: 1px solid var(--rule) !important; }
+    .obj-item:nth-child(1), .obj-item:nth-child(2) { border-bottom: 1px solid var(--rule); }
     .gallery-grid { grid-template-columns: repeat(2, 1fr); }
-    .gal-item { border-bottom: 1.5px solid #0F0F0F; }
-    .gal-item:not(:last-child) { border-right: none; }
-    .gal-item:nth-child(odd)  { border-right: 1.5px solid #0F0F0F !important; }
-    .gal-item:nth-child(even) { border-right: none !important; }
-
+    .gal-item + .gal-item { border-left: none; }
+    .gal-item:nth-child(even) { border-left: 1px solid var(--rule); }
+    .gal-item:nth-child(1), .gal-item:nth-child(2) { border-bottom: 1px solid var(--rule); }
     .prog-grid { grid-template-columns: repeat(2, 1fr); }
-    .prog-item.prog-r { border-right: 1.5px solid #0F0F0F; }
-    .prog-item:nth-child(2n) { border-right: none !important; }
-    .prog-item:nth-child(n+5) { border-bottom: none; }
+    .prog-item + .prog-item { border-left: 1px solid var(--rule); }
+    .prog-item:nth-child(even) { border-left: 1px solid var(--rule); }
+    .prog-item:nth-child(2n+1) { border-left: none; }
+    .sp-inner { padding: 2.25rem 2rem; }
   }
 
-  /* ── MOBILE ≤ 768px ── */
+  /* ─────── MOBILE ≤ 768px ─────── */
   @media (max-width: 768px) {
     .hero-grid { grid-template-columns: 1fr; }
-    .hero-l {
-      border-right: none !important;
-      border-bottom: 1.5px solid #0F0F0F;
-      padding: 2.5rem 1.25rem 2rem;
-      gap: 2rem;
-    }
-
-    .cd-grid { grid-template-columns: 1fr; }
-    .cd-l { border-right: none !important; border-bottom: 1.5px solid #0F0F0F; padding: 1.75rem 1.25rem; }
-    .cd-r { padding: 1.75rem 1.25rem; }
+    .hero-l { border-right: none; border-bottom: 1px solid var(--rule); padding: 2.75rem 1.5rem 2.5rem; gap: 2.25rem; }
+    .hero-r-top { padding: 2rem 1.5rem; }
+    .stat-cell { padding: 1.5rem 1.5rem; }
+    .hero-patron { padding: 1rem 1.5rem; }
 
     .uni-grid { grid-template-columns: 1fr; }
-    .uni-img  { min-height: 240px; }
-    .uni-r    { padding: 2rem 1.25rem; border-top: 1.5px solid #0F0F0F; }
+    .uni-img-wrap { min-height: 280px; }
+    .uni-r { padding: 2.5rem 1.5rem; }
+    .uni-top .v-divider { display: none; }
 
     .ann-grid { grid-template-columns: 1fr; }
-    .ann-item:not(:last-child) { border-right: none !important; border-bottom: 1.5px solid #0F0F0F; }
+    .ann-item + .ann-item { border-left: none; border-top: 1px solid var(--rule); }
+    .ann-body { padding: 1.75rem 1.5rem; }
 
     .obj-grid { grid-template-columns: 1fr; }
-    .obj-item { padding: 2rem 1.25rem; border-right: none !important; border-bottom: 1.5px solid #0F0F0F; }
+    .obj-item + .obj-item { border-left: none !important; border-right: none !important; border-top: 1px solid var(--rule); }
+    .obj-item:nth-child(1), .obj-item:nth-child(2) { border-bottom: none; }
+    .obj-item { padding: 2.25rem 1.5rem; }
 
     .prog-grid { grid-template-columns: 1fr; }
-    .prog-item { padding: 1.5rem 1.25rem; border-right: none !important; }
-    .prog-item.prog-r { border-right: none !important; }
-    .prog-item:nth-child(2n) { border-right: none !important; }
+    .prog-item + .prog-item { border-left: none; border-top: 1px solid var(--rule); }
+    .prog-item { padding: 2rem 1.5rem; }
+    .prog-row-b { border-bottom: none; }
 
     .sp-grid { grid-template-columns: 1fr; }
-    .sp-item:not(:last-child) { border-right: none !important; border-bottom: 1.5px solid #0F0F0F; }
-    .sp-inner { padding: 2rem 1.25rem !important; }
+    .sp-item + .sp-item { border-left: none; border-top: 1px solid var(--rule); }
+    .sp-inner { padding: 2rem 1.5rem; }
 
     .gallery-grid { grid-template-columns: repeat(2, 1fr); }
-    .gal-item:not(:last-child) { border-right: none; }
-    .gal-item:nth-child(odd)  { border-right: 1.5px solid #0F0F0F !important; }
-    .gal-item:nth-child(even) { border-right: none !important; }
+    .gal-item + .gal-item { border-left: none; }
+    .gal-item:nth-child(even) { border-left: 1px solid var(--rule) !important; }
 
     .cta-grid { grid-template-columns: 1fr; min-height: auto; }
-    .cta-l { border-right: none !important; border-bottom: 1.5px solid #0F0F0F; padding: 2.5rem 1.25rem; }
-    .cta-r { padding: 2.5rem 1.25rem; }
+    .cta-l { border-right: none; border-bottom: 1px solid var(--rule); padding: 3rem 1.5rem; }
+    .cta-r { padding: 3rem 1.5rem; }
 
-    .sec-hdr { padding: 1rem 1.25rem; flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+    .sec-hdr { padding: 1.25rem 1.5rem; flex-direction: column; align-items: flex-start; }
     .hide-mob { display: none !important; }
+
+    .hero-h1 { font-size: clamp(3.5rem, 16vw, 6rem); }
   }
 
-  /* ── SMALL MOBILE ≤ 400px ── */
+  /* ─────── SMALL ≤ 400px ─────── */
   @media (max-width: 400px) {
-    .hero-l   { padding: 2rem 1rem 1.75rem; }
-    .cd-l, .cd-r { padding: 1.5rem 1rem !important; }
-    .uni-r    { padding: 1.75rem 1rem; }
-    .obj-item { padding: 1.75rem 1rem; }
-    .prog-item { padding: 1.25rem 1rem; }
-    .cta-l, .cta-r { padding: 2rem 1rem; }
-    .sec-hdr  { padding: 0.875rem 1rem; }
-    .sp-inner { padding: 1.75rem 1rem !important; }
+    .hero-l { padding: 2.25rem 1.125rem 2rem; }
     .gallery-grid { grid-template-columns: 1fr; }
-    .gal-item { border-right: none !important; }
+    .gal-item + .gal-item { border-left: none !important; border-top: 1px solid var(--rule); }
+    .stats-grid { grid-template-columns: 1fr; }
+    .stat-cell:nth-child(odd) { border-right: none; border-bottom: 1px solid var(--rule); }
   }
 `;
 
@@ -297,123 +631,122 @@ export default function Home() {
     return `Il y a ${Math.floor(h / 24)}j`;
   };
 
+  const fadeIn = (v, i = 0) => ({
+    opacity: v ? 1 : 0,
+    transform: v ? "none" : "translateY(18px)",
+    transition: `opacity 0.65s ease ${i * 0.1}s, transform 0.65s ease ${i * 0.1}s`,
+  });
+
   return (
     <div className="home-root">
       <style>{CSS}</style>
 
       {/* ── TICKER ── */}
-      <div style={{ background: "#1565C0", padding: "0.45rem 0", overflow: "hidden", borderBottom: "1.5px solid #0D47A1" }}>
-        <div style={{ display: "flex", gap: "4rem", animation: "ticker 22s linear infinite", whiteSpace: "nowrap", fontFamily: "'DM Mono', monospace", fontSize: "0.62rem", letterSpacing: "0.14em", color: "rgba(255,255,255,0.8)", textTransform: "uppercase" }}>
-          {Array(6).fill(null).map((_, i) => (
-            <span key={i}>★ STUD 2026 · 24–30 AVRIL · UNIVERSITÉ DE DOUALA · PERSONNEL ENGAGÉ, UNIVERSITÉ D'EXCELLENCE ·&nbsp;</span>
+      <div className="ticker-wrap">
+        <div className="ticker-inner">
+          {Array(8).fill(null).map((_, i) => (
+            <span key={i} style={{ display: "inline-flex", gap: "1rem", alignItems: "center" }}>
+              <span style={{ color: "rgba(255,255,255,0.5)" }}>STUD 2026</span>
+              <span style={{ color: "#F57C00" }}>★</span>
+              <span style={{ color: "rgba(255,255,255,0.5)" }}>24–30 AVRIL</span>
+              <span style={{ color: "#F57C00" }}>★</span>
+              <span style={{ color: "rgba(255,255,255,0.5)" }}>UNIVERSITÉ DE DOUALA</span>
+              <span style={{ color: "#F57C00" }}>★</span>
+              <span style={{ color: "rgba(255,255,255,0.5)" }}>PERSONNEL ENGAGÉ, UNIVERSITÉ D'EXCELLENCE</span>
+              <span style={{ color: "#F57C00", marginRight: "4rem" }}>★</span>
+            </span>
           ))}
         </div>
       </div>
 
       {/* ── HERO ── */}
-      <section className="bdr-b">
-        <div className="wrap hero-grid">
+      <section className="hero-section">
+        <div className="hero-grid">
+          {/* Left */}
           <div className="hero-l">
             <div>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", border: "1.5px solid #0F0F0F", padding: "0.3rem 0.8rem", fontFamily: "'DM Mono', monospace", fontSize: "0.6rem", letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: "2rem", opacity: loaded ? 1 : 0, transform: loaded ? "none" : "translateY(10px)", transition: "all 0.5s ease 0.1s" }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#F57C00", display: "inline-block" }} />
+              <div className="hero-badge" style={{ opacity: loaded ? 1 : 0, transform: loaded ? "none" : "translateY(10px)", transition: "all 0.5s ease 0.1s" }}>
+                <span className="hero-dot" />
                 Édition 2026
               </div>
-              <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(4.5rem, 10vw, 10rem)", lineHeight: 0.88, letterSpacing: "0.02em", color: "#0F0F0F", opacity: loaded ? 1 : 0, transform: loaded ? "none" : "translateY(30px)", transition: "all 0.7s ease 0.2s" }}>                SE<span style={{ color: "#1565C0" }}>MA</span>INE DU<br />
-                TRA<span style={{ color: "#F57C00" }}>VAI</span>LLEUR
+              <h1 className="hero-h1" style={{ opacity: loaded ? 1 : 0, transform: loaded ? "none" : "translateY(30px)", transition: "all 0.75s ease 0.2s" }}>
+                SE<em>MA</em>INE<br />
+                DU TRA<strong>VAI</strong>LLEUR
               </h1>
             </div>
-            <div style={{ opacity: loaded ? 1 : 0, transition: "all 0.7s ease 0.5s" }}>
-              <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", fontSize: "1rem", color: "#666660", lineHeight: 1.75, maxWidth: 380, marginBottom: "2rem" }}>
-                «{META.theme}»
-              </p>
-              <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-                <Link to="/programme" style={btnPrimary}
-                  onMouseEnter={e => e.currentTarget.style.background = "#0D47A1"}
-                  onMouseLeave={e => e.currentTarget.style.background = "#1565C0"}>
+            <div style={{ opacity: loaded ? 1 : 0, transition: "all 0.75s ease 0.45s" }}>
+              <p className="hero-theme">«{META.theme}»</p>
+              <div style={{ marginTop: "2.25rem" }} className="hero-cta">
+                <Link to="/programme" className="btn-primary">
                   Voir le Programme <ArrowRight size={14} />
                 </Link>
-                <Link to="/sponsoring" style={btnOutline}
-                  onMouseEnter={e => { e.currentTarget.style.background = "#0F0F0F"; e.currentTarget.style.color = "#fff"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#0F0F0F"; }}>
+                <Link to="/sponsoring" className="btn-outline">
                   Devenir Sponsor
                 </Link>
               </div>
             </div>
           </div>
 
-          <div className="hero-r" style={{ opacity: loaded ? 1 : 0, transition: "opacity 0.7s ease 0.4s" }}>
-            <div style={{ padding: "2.5rem 2rem", borderBottom: "1.5px solid #0F0F0F", display: "flex", flexDirection: "column", justifyContent: "center", gap: "1.5rem" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "1.25rem", flexWrap: "wrap" }}>
-                <img src={logo} alt="STUD 2026" style={{ height: 64, width: "auto" }} />
-                <div className="hide-mob" style={{ width: "1.5px", height: 52, background: "#EAEAE5" }} />
-                <div>
-                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.56rem", letterSpacing: "0.2em", color: "#88887F", textTransform: "uppercase", marginBottom: 4 }}>Compte à rebours</div>
-                  <Countdown compact />
-                </div>
+          {/* Right */}
+          <div className="hero-r" style={{ opacity: loaded ? 1 : 0, transition: "opacity 0.75s ease 0.35s" }}>
+            <div className="hero-r-top">
+              <img src={logo} alt="STUD 2026" style={{ height: 60, width: "auto" }} />
+              <div className="v-divider hide-mob" />
+              <div>
+                <div className="cd-label">Compte à rebours</div>
+                <Countdown compact />
               </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
+
+            <div className="stats-grid">
               {STATS.map((s, i) => (
-                <div key={i} style={{ padding: "1.75rem 2rem", borderTop: "1.5px solid #0F0F0F", borderRight: i % 2 === 0 ? "1.5px solid #0F0F0F" : "none" }}>
-                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(1.75rem, 3.5vw, 3.2rem)", lineHeight: 1, color: i % 2 === 0 ? "#0F0F0F" : "#1565C0", letterSpacing: "0.02em" }}>
+                <div key={i} className="stat-cell">
+                  <div className="stat-num" style={{ color: i % 2 === 0 ? "var(--ink)" : "var(--blue)" }}>
                     <Counter target={s.value} />
                   </div>
-                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.58rem", letterSpacing: "0.14em", color: "#88887F", textTransform: "uppercase", marginTop: "0.3rem" }}>{s.label}</div>
+                  <div className="stat-lbl">{s.label}</div>
                 </div>
               ))}
             </div>
-            <div style={{ padding: "1.25rem 2rem", borderTop: "1.5px solid #0F0F0F", display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-              <img src={uniLogo} alt="Université de Douala" style={{ height: 36, width: "auto", opacity: 0.85 }} />
+
+            <div className="hero-patron">
+              <img src={uniLogo} alt="Université de Douala" style={{ height: 34, width: "auto", opacity: 0.8 }} />
               <div>
-                <div style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "0.82rem" }}>{META.patron}</div>
-                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.56rem", color: "#88887F", letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 2 }}>Haut Patronage</div>
+                <div className="patron-name">{META.patron}</div>
+                <div className="patron-role">Haut Patronage</div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* ── COUNTDOWN BANNER ── */}
-      <section className="bdr-b" style={{ background: "#EEF4FF" }}>
-        <div className="wrap cd-grid">
-          <div className="cd-l">
-            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.58rem", letterSpacing: "0.2em", color: "#88887F", textTransform: "uppercase", marginBottom: "0.5rem" }}>Décompte officiel</div>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.6rem", letterSpacing: "0.04em", lineHeight: 1.1 }}>
-              AVANT L'OUVERTURE<br /><span style={{ color: "#1565C0" }}>STUD 2026</span>
-            </div>
-            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.62rem", color: "#F57C00", letterSpacing: "0.1em", marginTop: "0.5rem" }}>{META.dates}</div>
-          </div>
-          <div className="cd-r"><Countdown /></div>
         </div>
       </section>
 
       {/* ── UNIVERSITY ── */}
-      <section ref={uniRef} className="bdr-b">
-        <div className="wrap uni-grid">
-          <div className="uni-img">
-            <img src={uniImg} alt="Université de Douala" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: uniV ? 1 : 0.3, transform: uniV ? "scale(1)" : "scale(1.05)", transition: "all 1.2s ease" }} />
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(13,27,42,0.7) 0%, transparent 60%)" }} />
-            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "2rem" }}>
-              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.56rem", letterSpacing: "0.18em", color: "rgba(255,255,255,0.5)", textTransform: "uppercase", marginBottom: 6 }}>Douala, Cameroun</div>
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "2rem", color: "#fff", letterSpacing: "0.04em", lineHeight: 1 }}>Université de Douala</div>
+      <section ref={uniRef} className="uni-section">
+        <div className="uni-grid">
+          <div className="uni-img-wrap">
+            <img src={uniImg} alt="Université de Douala"
+              style={{ opacity: uniV ? 1 : 0.2, transform: uniV ? "scale(1)" : "scale(1.06)", transition: "all 1.4s ease" }} />
+            <div className="uni-img-overlay" />
+            <div className="uni-img-caption">
+              <div className="uni-img-city">Douala, Cameroun</div>
+              <div className="uni-img-name">Université de Douala</div>
             </div>
           </div>
-          <div className="uni-r" style={{ opacity: uniV ? 1 : 0, transform: uniV ? "none" : "translateX(20px)", transition: "all 0.8s ease 0.2s" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "2rem", flexWrap: "wrap" }}>
-              <img src={uniLogo} alt="Logo UDo" style={{ height: 52, width: "auto" }} />
-              <div className="hide-mob" style={{ width: "1.5px", height: 40, background: "#EAEAE5" }} />
-              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.56rem", letterSpacing: "0.14em", color: "#88887F", textTransform: "uppercase", lineHeight: 1.6 }}>Fondée en 1977<br />48 871 Étudiants</div>
+          <div className="uni-r" style={fadeIn(uniV)}>
+            <div className="uni-top">
+              <img src={uniLogo} alt="Logo UDo" style={{ height: 50, width: "auto" }} />
+              <div className="v-divider hide-mob" />
+              <div className="uni-meta">Fondée en 1977<br />48 871 Étudiants</div>
             </div>
-            <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(1.8rem, 4vw, 3.5rem)", lineHeight: 1, letterSpacing: "0.02em", marginBottom: "1rem" }}>
-              UN ÉVÉNEMENT<br /><span style={{ color: "#1565C0" }}>INSTITUTIONNEL</span><br />D'ENVERGURE
+            <h2 className="uni-h2">
+              UN ÉVÉNEMENT<br />
+              <span style={{ color: "var(--blue)" }}>INSTITUTIONNEL</span><br />
+              D'ENVERGURE
             </h2>
-            <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", fontSize: "0.95rem", color: "#555550", lineHeight: 1.85, maxWidth: 420, marginBottom: "2rem" }}>
+            <p className="uni-desc">
               La STUD 2026 est organisée sous le haut patronage du {META.patron}, Recteur de l'Université de Douala. Elle réunit l'ensemble du personnel des 3 campus dans un esprit de célébration, de cohésion et d'excellence.
             </p>
-            <Link to="/about" style={btnPrimary}
-              onMouseEnter={e => e.currentTarget.style.background = "#0D47A1"}
-              onMouseLeave={e => e.currentTarget.style.background = "#1565C0"}>
+            <Link to="/about" className="btn-primary" style={{ alignSelf: "flex-start" }}>
               Découvrir l'Université <ArrowRight size={14} />
             </Link>
           </div>
@@ -421,220 +754,197 @@ export default function Home() {
       </section>
 
       {/* ── GALLERY PREVIEW ── */}
-      <section ref={mediaRef} className="bdr-b">
-        <div className="wrap">
-          <div className="sec-hdr">
-            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.9rem", letterSpacing: "0.04em", display: "flex", alignItems: "center", gap: "0.6rem" }}>
-              <Images size={26} strokeWidth={1.5} color="#1565C0" />
-              Derniers<span style={{ color: "#1565C0" }}>&nbsp;Moments</span>
-            </span>
-            <Link to="/gallery" style={linkStyle}>Voir la galerie <ArrowRight size={12} /></Link>
-          </div>
-          {galleryItems.length === 0 ? (
-            <div style={{ padding: "4rem 2rem", textAlign: "center" }}>
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "3rem", color: "#EAEAE5", letterSpacing: "0.04em", marginBottom: "0.75rem" }}>À VENIR</div>
-              <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", color: "#88887F", fontSize: "0.9rem" }}>Les photos de l'événement seront publiées ici.</p>
-              <Link to="/gallery" style={{ ...btnPrimary, display: "inline-flex", marginTop: "1.5rem" }}
-                onMouseEnter={e => e.currentTarget.style.background = "#0D47A1"}
-                onMouseLeave={e => e.currentTarget.style.background = "#1565C0"}>
-                Accéder à la galerie <ArrowRight size={14} />
-              </Link>
-            </div>
-          ) : (
-            <div className="gallery-grid">
-              {galleryItems.map((item, i) => (
-                <Link key={item.id} to="/gallery" className="gal-item"
-                  style={{ opacity: mediaV ? 1 : 0, transform: mediaV ? "none" : "scale(0.97)", transition: `all 0.5s ease ${i * 0.08}s` }}>
-                  {item.type === "video" ? (
-                    <div style={{ width: "100%", height: "100%", background: "#0D1B2A", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <Play size={18} color="#fff" />
-                      </div>
-                    </div>
-                  ) : (
-                    <img src={item.url} alt={item.caption || ""} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.4s" }}
-                      onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
-                      onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-                    />
-                  )}
-                  {item.caption && (
-                    <>
-                      <div className="gal-overlay" style={{ position: "absolute", inset: 0, background: "linear-gradient(transparent 55%, rgba(0,0,0,0.65))", opacity: 0, transition: "opacity 0.3s", pointerEvents: "none" }} />
-                      <div className="gal-cap" style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0.75rem", fontFamily: "'Fraunces', serif", fontStyle: "italic", fontSize: "0.75rem", color: "#fff", transform: "translateY(100%)", transition: "transform 0.3s", pointerEvents: "none" }}>{item.caption}</div>
-                    </>
-                  )}
-                </Link>
-              ))}
-            </div>
-          )}
+      <section ref={mediaRef} className="gallery-section">
+        <div className="sec-hdr">
+          <span className="sec-hdr-title">
+            <Images size={24} strokeWidth={1.5} color="var(--blue)" />
+            Derniers&nbsp;<span style={{ color: "var(--blue)" }}>Moments</span>
+          </span>
+          <Link to="/gallery" className="sec-link">Voir la galerie <ArrowRight size={11} /></Link>
         </div>
+        {galleryItems.length === 0 ? (
+          <div className="gallery-empty" style={{ maxWidth: 1280, margin: "0 auto" }}>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "3.5rem", color: "#EAEAE5", letterSpacing: "0.04em", marginBottom: "0.75rem" }}>À VENIR</div>
+            <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", color: "var(--muted)", fontSize: "0.9rem", marginBottom: "2rem" }}>Les photos de l'événement seront publiées ici.</p>
+            <Link to="/gallery" className="btn-primary" style={{ display: "inline-flex" }}>
+              Accéder à la galerie <ArrowRight size={14} />
+            </Link>
+          </div>
+        ) : (
+          <div className="gallery-grid">
+            {galleryItems.map((item, i) => (
+              <Link key={item.id} to="/gallery" className="gal-item"
+                style={fadeIn(mediaV, i)}>
+                {item.type === "video" ? (
+                  <div style={{ width: "100%", height: "100%", background: "#0D1B2A", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(255,255,255,0.2)" }}>
+                      <Play size={18} color="#fff" />
+                    </div>
+                  </div>
+                ) : (
+                  <img src={item.url} alt={item.caption || ""} />
+                )}
+                {item.caption && (
+                  <>
+                    <div className="gal-overlay" />
+                    <div className="gal-cap">{item.caption}</div>
+                  </>
+                )}
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* ── ANNOUNCEMENTS PREVIEW ── */}
-      <section className="bdr-b">
-        <div className="wrap">
-          <div className="sec-hdr">
-            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.9rem", letterSpacing: "0.04em", display: "flex", alignItems: "center", gap: "0.6rem" }}>
-              <Megaphone size={26} strokeWidth={1.5} color="#F57C00" />
-              Dernières<span style={{ color: "#F57C00" }}>&nbsp;Annonces</span>
-            </span>
-            <Link to="/announcements" style={linkStyle}>Toutes les annonces <ArrowRight size={12} /></Link>
-          </div>
-          {announcements.length === 0 ? (
-            <div style={{ padding: "4rem 2rem", textAlign: "center" }}>
-              <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", color: "#88887F" }}>Aucune annonce pour le moment.</p>
-            </div>
-          ) : (
-            <div className="ann-grid">
-              {announcements.map((ann, i) => {
-                const catColor = CAT_COLORS[ann.category] || "#1565C0";
-                return (
-                  <Link key={ann.id} to="/announcements" className="ann-item"
-                    onMouseEnter={e => e.currentTarget.style.background = "#F5F8FF"}
-                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                    <div style={{ height: 3, background: catColor }} />
-                    <div style={{ padding: "1.75rem 2rem", flex: 1, display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                        {ann.pinned && <Pin size={11} color={catColor} />}
-                        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.54rem", letterSpacing: "0.12em", textTransform: "uppercase", color: catColor }}>{ann.category}</span>
-                        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.52rem", color: "#88887F", marginLeft: "auto" }}>{timeAgo(ann.created_at)}</span>
-                      </div>
-                      <h3 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1rem", lineHeight: 1.35, color: "#0F0F0F", margin: 0 }}>{ann.title}</h3>
-                      <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", fontSize: "0.82rem", color: "#666660", lineHeight: 1.65, margin: 0 }}>
-                        {ann.body.length > 120 ? ann.body.slice(0, 120) + "…" : ann.body}
-                      </p>
-                      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.54rem", color: "#88887F", marginTop: "auto" }}>{ann.author}</div>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
+      <section className="ann-section">
+        <div className="sec-hdr">
+          <span className="sec-hdr-title">
+            <Megaphone size={24} strokeWidth={1.5} color="var(--orange)" />
+            Dernières&nbsp;<span style={{ color: "var(--orange)" }}>Annonces</span>
+          </span>
+          <Link to="/announcements" className="sec-link">Toutes les annonces <ArrowRight size={11} /></Link>
         </div>
+        {announcements.length === 0 ? (
+          <div style={{ maxWidth: 1280, margin: "0 auto", padding: "4rem 2.5rem", textAlign: "center" }}>
+            <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", color: "var(--muted)" }}>Aucune annonce pour le moment.</p>
+          </div>
+        ) : (
+          <div className="ann-grid">
+            {announcements.map((ann) => {
+              const catColor = CAT_COLORS[ann.category] || "var(--blue)";
+              return (
+                <Link key={ann.id} to="/announcements" className="ann-item">
+                  <div className="ann-bar" style={{ background: catColor }} />
+                  <div className="ann-body">
+                    <div className="ann-meta">
+                      {ann.pinned && <Pin size={10} color={catColor} />}
+                      <span className="ann-cat" style={{ color: catColor }}>{ann.category}</span>
+                      <span className="ann-time">{timeAgo(ann.created_at)}</span>
+                    </div>
+                    <h3 className="ann-title">{ann.title}</h3>
+                    <p className="ann-excerpt">{ann.body.length > 120 ? ann.body.slice(0, 120) + "…" : ann.body}</p>
+                    <div className="ann-author">{ann.author}</div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* ── OBJECTIVES ── */}
-      <section ref={objRef} className="bdr-b">
-        <div className="wrap">
-          <div className="sec-hdr">
-            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.9rem", letterSpacing: "0.04em" }}>Nos Objectifs</span>
-            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.56rem", color: "#88887F", letterSpacing: "0.15em", textTransform: "uppercase" }}>STUD 2026 — Section 01</span>
-          </div>
-          <div className="obj-grid">
-            {OBJECTIVES.map((o, i) => (
-              <div key={i} className="obj-item"
-                style={{ opacity: objV ? 1 : 0, transform: objV ? "none" : "translateY(20px)", transition: `all 0.6s ease ${i * 0.1}s` }}>
-                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "4.5rem", lineHeight: 1, color: i % 2 === 0 ? "#1565C0" : "#EAEAE5", marginBottom: "1.25rem", letterSpacing: "0.02em" }}>{o.num}</div>
-                <div style={{ width: "100%", aspectRatio: "4/3", marginBottom: "1.5rem", background: i % 2 === 0 ? "#EEF4FF" : "#FFF8EE", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-                  <img src={OBJ_ILLUSTRATIONS[i]} alt={o.title} style={{ width: "85%", height: "85%", objectFit: "contain" }}
-                    onError={e => { e.target.parentElement.style.display = "none"; }} />
-                </div>
-                <h3 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1rem", marginBottom: "0.65rem", lineHeight: 1.3 }}>{o.title}</h3>
-                <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", fontSize: "0.82rem", color: "#666660", lineHeight: 1.7 }}>{o.desc}</p>
+      <section ref={objRef} className="obj-section">
+        <div className="sec-hdr">
+          <span className="sec-hdr-title">Nos Objectifs</span>
+          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.54rem", color: "var(--muted)", letterSpacing: "0.16em", textTransform: "uppercase" }}>STUD 2026 — Section 01</span>
+        </div>
+        <div className="obj-grid">
+          {OBJECTIVES.map((o, i) => (
+            <div key={i} className="obj-item" style={fadeIn(objV, i)}>
+              <div className="obj-num" style={{ color: i % 2 === 0 ? "var(--blue)" : "#DDDDD5" }}>{o.num}</div>
+              <div className="obj-illus" style={{ background: i % 2 === 0 ? "var(--blue-light)" : "#FFF8EE" }}>
+                <img src={OBJ_ILLUSTRATIONS[i]} alt={o.title}
+                  onError={e => { e.target.parentElement.style.display = "none"; }} />
               </div>
-            ))}
-          </div>
+              <h3 className="obj-title">{o.title}</h3>
+              <p className="obj-desc">{o.desc}</p>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* ── FEATURED PROGRAMME ── */}
-      <section ref={pgRef} className="bdr-b">
-        <div className="wrap">
-          <div className="sec-hdr">
-            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.9rem", letterSpacing: "0.04em" }}>À l'Affiche</span>
-            <Link to="/programme" style={linkStyle}>Programme complet <ArrowRight size={12} /></Link>
-          </div>
-          <div className="prog-grid">
-            {featuredEvents.map((ev, i) => (
+      <section ref={pgRef} className="prog-section">
+        <div className="sec-hdr">
+          <span className="sec-hdr-title">À l'Affiche</span>
+          <Link to="/programme" className="sec-link">Programme complet <ArrowRight size={11} /></Link>
+        </div>
+        <div className="prog-grid">
+          {featuredEvents.map((ev, i) => {
+            const isDark = i === 0;
+            return (
               <div key={i}
-                className={`prog-item ${(i + 1) % 3 !== 0 ? "prog-r" : ""} ${i < 3 ? "prog-b" : ""}`}
-                style={{ background: i === 0 ? "#0D1B2A" : "transparent", color: i === 0 ? "#FAFAF8" : "#0F0F0F", opacity: pgV ? 1 : 0, transform: pgV ? "none" : "translateY(16px)", transition: `all 0.55s ease ${i * 0.07}s` }}>
-                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.58rem", letterSpacing: "0.16em", textTransform: "uppercase", color: i === 0 ? "#F57C00" : "#88887F", marginBottom: "0.75rem" }}>{ev.date}</div>
-                <div style={{ width: "100%", height: 80, marginBottom: "0.75rem", display: "flex", alignItems: "center" }}>
+                className={`prog-item ${i % 3 !== 2 ? "" : ""} ${i < 3 ? "prog-row-b" : ""} ${isDark ? "prog-item--dark" : ""}`}
+                style={{
+                  color: isDark ? "rgba(255,255,255,0.9)" : "var(--ink)",
+                  borderLeft: i % 3 !== 0 ? "1px solid var(--rule)" : "none",
+                  ...fadeIn(pgV, i)
+                }}>
+                <div className="prog-date" style={{ color: isDark ? "var(--orange)" : "var(--muted)" }}>{ev.date}</div>
+                <div className="prog-img">
                   <img src={`/assets/${ev.svg}`} alt={ev.name}
-                    style={{ height: "100%", width: "auto", maxWidth: "60%", objectFit: "contain", filter: i === 0 ? "brightness(0) invert(1)" : "none", opacity: i === 0 ? 0.7 : 1 }}
+                    style={{ filter: isDark ? "brightness(0) invert(1)" : "none", opacity: isDark ? 0.65 : 1 }}
                     onError={e => { e.target.style.display = "none"; }} />
                 </div>
-                <h3 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "1.05rem", lineHeight: 1.3, marginBottom: "0.5rem" }}>{ev.name}</h3>
-                <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", fontSize: "0.82rem", lineHeight: 1.65, color: i === 0 ? "rgba(255,255,255,0.5)" : "#666660" }}>{ev.description}</p>
+                <h3 className="prog-name">{ev.name}</h3>
+                <p className="prog-desc" style={{ color: isDark ? "rgba(255,255,255,0.45)" : "var(--ink-soft)" }}>{ev.description}</p>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
       </section>
 
       {/* ── SPONSORING PREVIEW ── */}
-      <section ref={spRef} className="bdr-b">
-        <div className="wrap">
-          <div className="sec-hdr">
-            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.9rem", letterSpacing: "0.04em" }}>Packages Sponsoring</span>
-            <Link to="/sponsoring" style={linkStyle}>Voir les offres <ArrowRight size={12} /></Link>
-          </div>
-          <div className="sp-grid">
-            {SPONSORING.map((offer, i) => (
-              <div key={i} className="sp-item"
-                style={{ opacity: spV ? 1 : 0, transform: spV ? "none" : "translateY(20px)", transition: `all 0.6s ease ${i * 0.15}s` }}>
-                <div style={{ height: 4, background: offer.color }} />
-                <div className="sp-inner">
-                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.58rem", letterSpacing: "0.18em", color: offer.color, marginBottom: "0.4rem" }}>{offer.badge} OFFRE {offer.tier.toUpperCase()}</div>
-                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(2rem, 3.5vw, 3.2rem)", lineHeight: 1, marginBottom: "0.2rem", letterSpacing: "0.02em" }}>{offer.price}</div>
-                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.6rem", color: "#88887F", letterSpacing: "0.1em", marginBottom: "2rem" }}>{offer.currency}</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "2rem" }}>
-                    {offer.visibility.slice(0, 3).map((v, j) => (
-                      <div key={j} style={{ display: "flex", gap: "0.6rem", fontFamily: "'Fraunces', serif", fontSize: "0.82rem", color: "#333", lineHeight: 1.4 }}>
-                        <span style={{ color: offer.color, flexShrink: 0, fontWeight: 700 }}>—</span>{v}
-                      </div>
-                    ))}
-                    {offer.visibility.length > 3 && (
-                      <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.58rem", color: "#88887F" }}>+{offer.visibility.length - 3} avantages…</div>
-                    )}
-                  </div>
-                  <Link to="/sponsoring"
-                    style={{ display: "block", textAlign: "center", textDecoration: "none", border: `1.5px solid ${offer.color}`, color: offer.color, padding: "0.75rem 1.5rem", fontFamily: "'DM Mono', monospace", fontSize: "0.66rem", letterSpacing: "0.12em", textTransform: "uppercase", transition: "all 0.2s" }}
-                    onMouseEnter={e => { e.currentTarget.style.background = offer.color; e.currentTarget.style.color = "#fff"; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = offer.color; }}>
-                    En savoir plus →
-                  </Link>
+      <section ref={spRef} className="sp-section">
+        <div className="sec-hdr">
+          <span className="sec-hdr-title">Packages Sponsoring</span>
+          <Link to="/sponsoring" className="sec-link">Voir les offres <ArrowRight size={11} /></Link>
+        </div>
+        <div className="sp-grid">
+          {SPONSORING.map((offer, i) => (
+            <div key={i} className="sp-item" style={fadeIn(spV, i * 1.5)}>
+              <div className="sp-top-bar" style={{ background: offer.color }} />
+              <div className="sp-inner">
+                <div className="sp-tier" style={{ color: offer.color }}>{offer.badge} Offre {offer.tier}</div>
+                <div className="sp-price">{offer.price}</div>
+                <div className="sp-currency">{offer.currency}</div>
+                <div className="sp-features">
+                  {offer.visibility.slice(0, 3).map((v, j) => (
+                    <div key={j} className="sp-feature">
+                      <span style={{ color: offer.color, fontWeight: 700, flexShrink: 0 }}>—</span>
+                      {v}
+                    </div>
+                  ))}
+                  {offer.visibility.length > 3 && (
+                    <div className="sp-more">+{offer.visibility.length - 3} avantages supplémentaires</div>
+                  )}
                 </div>
+                <Link to="/sponsoring" className="sp-cta"
+                  style={{ borderColor: offer.color, color: offer.color }}
+                  onMouseEnter={e => { e.currentTarget.style.background = offer.color; e.currentTarget.style.color = "#fff"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = offer.color; }}>
+                  En savoir plus →
+                </Link>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* ── BOTTOM CTA ── */}
-      <section>
-        <div className="wrap cta-grid">
+      <section className="cta-section">
+        <div className="cta-grid">
           <div className="cta-l">
-            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.56rem", letterSpacing: "0.2em", color: "#88887F", textTransform: "uppercase" }}>En savoir plus</div>
+            <div className="cta-label" style={{ color: "var(--muted)" }}>En savoir plus</div>
             <div>
-              <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(2.5rem, 5vw, 5rem)", lineHeight: 1, letterSpacing: "0.02em", marginBottom: "1.5rem" }}>
-                À PROPOS DE<br /><span style={{ color: "#1565C0" }}>L'UNIVERSITÉ</span>
+              <h2 className="cta-h2">
+                À PROPOS DE<br /><span style={{ color: "var(--blue)" }}>L'UNIVERSITÉ</span>
               </h2>
-              <Link to="/about" style={btnOutline}
-                onMouseEnter={e => { e.currentTarget.style.background = "#0F0F0F"; e.currentTarget.style.color = "#FAFAF8"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#0F0F0F"; }}>
-                Découvrir l'Histoire →
-              </Link>
+              <Link to="/about" className="btn-outline">Découvrir l'Histoire →</Link>
             </div>
           </div>
           <div className="cta-r">
-            <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.56rem", letterSpacing: "0.2em", color: "rgba(255,255,255,0.4)", textTransform: "uppercase" }}>Partenariat</div>
+            <div className="cta-label" style={{ color: "rgba(255,255,255,0.3)" }}>Partenariat</div>
             <div>
-              <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(2.5rem, 5vw, 5rem)", lineHeight: 1, letterSpacing: "0.02em", color: "#FAFAF8", marginBottom: "1.5rem" }}>
+              <h2 className="cta-h2" style={{ color: "#FAFAF8" }}>
                 DEVENEZ<br />SPONSOR
               </h2>
-              <Link to="/sponsoring"
-                style={{ ...btnOutline, borderColor: "#FAFAF8", color: "#FAFAF8" }}
-                onMouseEnter={e => { e.currentTarget.style.background = "#FAFAF8"; e.currentTarget.style.color = "#1565C0"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#FAFAF8"; }}>
-                Voir les offres →
-              </Link>
+              <Link to="/sponsoring" className="btn-outline btn-outline--white">Voir les offres →</Link>
             </div>
           </div>
         </div>
       </section>
-
     </div>
   );
 }

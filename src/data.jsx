@@ -214,5 +214,4 @@ export const NAV_LINKS = [
   { label: "Sponsoring", path: "/sponsoring" },
   { label: "Galerie", path: "/gallery" },
   { label: "Annonces", path: "/announcements" },
-  { label: "Contact", path: "/contact" },
 ];
