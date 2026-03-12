@@ -20,7 +20,7 @@ import Countdown from "../components/countdown";
 import { supabase } from "../lib/superbase";
 import PartnersMarquee from "../components/Partnersmarquee";
 import { TestimonialsCarousel, FeedbackFAB } from "../components/TestimonialsWidget";
-
+import FacultyStrip from "../components/FacultyStrip";
 import illuCohesion    from "../assets/icon-cohesion.svg";
 import illuExcellence  from "../assets/icon-trophy.svg";
 import illuCelebration from "../assets/icon-celebration.svg";
@@ -790,7 +790,7 @@ export default function Home() {
           </div>
         )}
       </section>
-
+<FacultyStrip />
       {/* ── ANNOUNCEMENTS PREVIEW ── */}
       <section className="ann-section">
         <div className="sec-hdr">
