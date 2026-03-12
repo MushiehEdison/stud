@@ -18,7 +18,7 @@ import uniLogo from "../assets/University_of_Douala_Logo.jpg";
 import uniImg from "../assets/uni.JPG";
 import Countdown from "../components/countdown";
 import { supabase } from "../lib/superbase";
-import PartnersMarquee from "../components/PartnersMarquee";
+import PartnersMarquee from "../components/Partnersmarquee";
 import { TestimonialsCarousel, FeedbackFAB } from "../components/TestimonialsWidget";
 
 import illuCohesion    from "../assets/icon-cohesion.svg";
