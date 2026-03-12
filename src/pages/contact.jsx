@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Phone, Mail, MapPin, Copy, Check, ArrowRight } from "lucide-react";
 import { CONTACT, META } from "../data";
-
+import { FeedbackFAB } from "../components/TestimonialsWidget";
 import iconPhone    from "../assets/icon-phone.svg";
 import iconEmail    from "../assets/icon-email.svg";
 import iconLocation from "../assets/icon-location.svg";
@@ -285,6 +285,9 @@ export default function Contact() {
           .contact-cta > a { padding: 2rem 1.5rem !important; }
         }
       `}</style>
+
+      {/* ── FEEDBACK FAB (fixed, bottom-right) ──────────── NEW ── */}
+            <FeedbackFAB />
     </div>
   );
 }

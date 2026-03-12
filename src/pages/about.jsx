@@ -4,6 +4,7 @@ import { ABOUT, META } from "../data";
 import ondoa from "../assets/ondoa.png";
 import uniImg from "../assets/uni.JPG";
 import uniLogo from "../assets/University_of_Douala_Logo.jpg";
+import { FeedbackFAB } from "../components/TestimonialsWidget";
 
 function useInView(t = 0.1) {
   const ref = useRef(null);
@@ -383,6 +384,8 @@ export default function About() {
           [style*="width: 180"] { display: none; }
         }
       `}</style>
+      {/* ── FEEDBACK FAB (fixed, bottom-right) ──────────── NEW ── */}
+            <FeedbackFAB />
     </div>
   );
 }

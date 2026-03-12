@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/superbase";
-import { ImagePlus, Plus, Trash2, Pin, PinOff, Lock, LogOut, Check, Upload, X } from "lucide-react";
+import { ImagePlus, Plus, Trash2, Pin, PinOff, Lock, LogOut, Check, Upload, X, MessageSquare, CheckCircle2, XCircle } from "lucide-react";
 
 // ─── CHANGE THIS PASSWORD ───────────────────────────────────
 const ADMIN_PASSWORD = "stud2026admin";
@@ -33,8 +33,13 @@ export default function AdminPanel() {
   const [aForm, setAForm] = useState({ title: "", body: "", author: "Comité Organisateur", category: "Général", pinned: false });
   const [aSuccess, setASuccess] = useState(false);
 
+  // Testimonials
+  const [testis, setTestis] = useState([]);
+  const [tLoading, setTLoading] = useState(false);
+  const [tFilter, setTFilter] = useState("all");
+
   useEffect(() => {
-    if (authed) { fetchGallery(); fetchAnns(); }
+    if (authed) { fetchGallery(); fetchAnns(); fetchTestis(); }
   }, [authed]);
 
   const handleLogin = () => {
@@ -55,8 +60,6 @@ export default function AdminPanel() {
 
   const handleGallerySubmit = async () => {
     let finalUrl = gForm.url.trim();
-
-    // If a file was chosen, upload to Supabase Storage
     if (gFile) {
       setGUploading(true);
       const ext = gFile.name.split(".").pop();
@@ -67,16 +70,13 @@ export default function AdminPanel() {
       finalUrl = pub.publicUrl;
       setGUploading(false);
     }
-
     if (!finalUrl) return;
-
     const { error } = await supabase.from("gallery").insert({
       url: finalUrl,
       caption: gForm.caption.trim() || null,
       category: gForm.category,
       type: gFile ? (gFile.type.startsWith("video") ? "video" : "image") : gForm.type,
     });
-
     if (!error) {
       setGForm({ url: "", caption: "", category: "Cérémonie", type: "image" });
       setGFile(null);
@@ -132,6 +132,51 @@ export default function AdminPanel() {
     await supabase.from("announcements").update({ pinned: !pinned }).eq("id", id);
     fetchAnns();
   };
+
+  // ── TESTIMONIALS ──────────────────────────────────────────
+
+  const fetchTestis = async () => {
+    setTLoading(true);
+    console.log("[ADMIN] fetching testimonials...");
+    const { data, error } = await supabase
+      .from("testimonials")
+      .select("*")
+      .order("created_at", { ascending: false });
+    console.log("[ADMIN] testimonials result:", { data, error });
+    if (error) {
+      console.error("[ADMIN] testimonials error:", error.message);
+      alert("Erreur chargement témoignages: " + error.message);
+    }
+    setTestis(data || []);
+    setTLoading(false);
+  };
+
+  const handleTestiApprove = async (id) => {
+    await supabase.from("testimonials").update({ approved: true }).eq("id", id);
+    fetchTestis();
+  };
+
+  const handleTestiReject = async (id) => {
+    if (!confirm("Supprimer ce témoignage ?")) return;
+    await supabase.from("testimonials").delete().eq("id", id);
+    fetchTestis();
+  };
+
+  const handleTestiUnapprove = async (id) => {
+    await supabase.from("testimonials").update({ approved: false }).eq("id", id);
+    fetchTestis();
+  };
+
+  const filteredTestis = testis.filter(t => {
+    if (tFilter === "pending")  return !t.approved;
+    if (tFilter === "approved") return t.approved;
+    return true;
+  });
+
+  const pendingCount  = testis.filter(t => !t.approved).length;
+  const approvedCount = testis.filter(t => t.approved).length;
+
+  // ── SHARED ────────────────────────────────────────────────
 
   const timeAgo = (iso) => {
     const diff = Date.now() - new Date(iso).getTime();
@@ -197,14 +242,21 @@ export default function AdminPanel() {
       </div>
 
       {/* Tabs */}
-      <div style={{ background: "#fff", borderBottom: "1.5px solid #EAEAE5", display: "flex" }}>
+      <div style={{ background: "#fff", borderBottom: "1.5px solid #EAEAE5", display: "flex", overflowX: "auto" }}>
         {[
-          { key: "gallery", label: "🖼 Galerie", count: gallery.length },
-          { key: "announcements", label: "📢 Annonces", count: anns.length },
+          { key: "gallery",       label: "🖼 Galerie",      count: gallery.length,  badge: null },
+          { key: "announcements", label: "📢 Annonces",     count: anns.length,     badge: null },
+          { key: "testimonials",  label: "💬 Témoignages",  count: testis.length,   badge: pendingCount > 0 ? pendingCount : null },
         ].map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)} style={{ padding: "1rem 2rem", border: "none", cursor: "pointer", background: "transparent", fontFamily: "'DM Mono', monospace", fontSize: "0.68rem", letterSpacing: "0.1em", textTransform: "uppercase", color: tab === t.key ? "#1565C0" : "#88887F", borderBottom: tab === t.key ? "3px solid #1565C0" : "3px solid transparent", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <button key={t.key} onClick={() => setTab(t.key)} style={{ padding: "1rem 2rem", border: "none", cursor: "pointer", background: "transparent", fontFamily: "'DM Mono', monospace", fontSize: "0.68rem", letterSpacing: "0.1em", textTransform: "uppercase", color: tab === t.key ? "#1565C0" : "#88887F", borderBottom: tab === t.key ? "3px solid #1565C0" : "3px solid transparent", transition: "all 0.2s", display: "flex", alignItems: "center", gap: "0.5rem", whiteSpace: "nowrap", flexShrink: 0 }}>
             {t.label}
             <span style={{ background: tab === t.key ? "#EEF4FF" : "#EAEAE5", color: tab === t.key ? "#1565C0" : "#88887F", padding: "0.1rem 0.45rem", borderRadius: 99, fontSize: "0.56rem" }}>{t.count}</span>
+            {/* Orange badge for pending testimonials */}
+            {t.badge && (
+              <span style={{ background: "#F57C00", color: "#fff", padding: "0.1rem 0.45rem", borderRadius: 99, fontSize: "0.56rem", fontWeight: 700 }}>
+                {t.badge} en attente
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -387,6 +439,78 @@ export default function AdminPanel() {
             </div>
           </div>
         )}
+
+        {/* ── TESTIMONIALS TAB ── */}
+        {tab === "testimonials" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+
+            {/* Stats bar */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "1rem" }}>
+              <div style={{ background: "#fff", border: "1.5px solid #EEF4FF", padding: "1.25rem 1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.54rem", letterSpacing: "0.16em", textTransform: "uppercase", color: "#88887F" }}>Total témoignages publiés</div>
+                <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "2rem", letterSpacing: "0.02em", color: "#1565C0", lineHeight: 1 }}>{testis.length}</div>
+              </div>
+            </div>
+
+            {/* Testimonials list */}
+            {tLoading ? (
+              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.7rem", color: "#88887F" }}>Chargement…</p>
+            ) : filteredTestis.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "4rem 2rem", background: "#fff", border: "1.5px solid #EAEAE5" }}>
+                <MessageSquare size={32} color="#DDDDD5" style={{ marginBottom: "0.75rem" }} />
+                <div style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", color: "#88887F", fontSize: "0.9rem" }}>
+                  Aucun témoignage pour le moment.
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                {filteredTestis.map(t => (
+                  <div key={t.id} style={{ background: "#fff", border: "1.5px solid #EAEAE5", padding: "1.25rem 1.5rem", display: "flex", gap: "1.25rem", alignItems: "flex-start" }}>
+
+                    {/* Avatar */}
+                    <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#1565C0", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Bebas Neue', sans-serif", fontSize: "0.9rem", color: "#fff", flexShrink: 0 }}>
+                      {t.name === "Anonyme" ? "?" : t.name.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase()}
+                    </div>
+
+                    {/* Content */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "0.35rem", flexWrap: "wrap" }}>
+                        <span style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: "0.88rem", color: "#0F0F0F" }}>{t.name}</span>
+                        {t.role && <span style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.5rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "#88887F" }}>— {t.role}</span>}
+                        {/* Stars */}
+                        <span style={{ marginLeft: "auto", display: "flex", gap: 2 }}>
+                          {[1,2,3,4,5].map(s => (
+                            <span key={s} style={{ fontSize: "0.65rem", color: s <= t.rating ? "#F9A825" : "#DDDDD5" }}>★</span>
+                          ))}
+                        </span>
+                      </div>
+                      <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", fontSize: "0.85rem", color: "#3D3D38", lineHeight: 1.65, margin: 0, marginBottom: "0.5rem" }}>
+                        «&nbsp;{t.body}&nbsp;»
+                      </p>
+                      <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+                        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.48rem", color: "#88887F" }}>{timeAgo(t.created_at)}</span>
+                      </div>
+                    </div>
+
+                    {/* Actions — delete only */}
+                    <div style={{ display: "flex", gap: "0.4rem", flexShrink: 0, alignItems: "center" }}>
+                      <button
+                        onClick={() => handleTestiReject(t.id)}
+                        title="Supprimer"
+                        style={{ background: "none", border: "none", cursor: "pointer", padding: "0.4rem", color: "#88887F", transition: "color 0.15s" }}
+                        onMouseEnter={e => e.currentTarget.style.color = "#C62828"}
+                        onMouseLeave={e => e.currentTarget.style.color = "#88887F"}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
 
       <style>{`

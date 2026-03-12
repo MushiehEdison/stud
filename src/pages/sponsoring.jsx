@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Check, ArrowRight } from "lucide-react";
 import { SPONSORING, CONTACT } from "../data";
-
+import { FeedbackFAB } from "../components/TestimonialsWidget";
 function useInView(t = 0.1) {
   const ref = useRef(null);
   const [v, setV] = useState(false);
@@ -146,6 +146,9 @@ export default function Sponsoring() {
           .cta-banner { grid-template-columns: 1fr !important; }
         }
       `}</style>
+
+      {/* ── FEEDBACK FAB (fixed, bottom-right) ──────────── NEW ── */}
+            <FeedbackFAB />
     </div>
   );
 }

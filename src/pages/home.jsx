@@ -1,3 +1,14 @@
+// ============================================================
+// home.jsx — Updated with PartnersMarquee + TestimonialsCarousel
+// ============================================================
+// CHANGES vs original:
+//   + Imported PartnersMarquee
+//   + Imported TestimonialsCarousel, FeedbackFAB from TestimonialsWidget
+//   + Added <PartnersMarquee /> between Sponsoring and bottom CTA
+//   + Added <TestimonialsCarousel /> between PartnersMarquee and bottom CTA
+//   + Added <FeedbackFAB /> at the bottom of the render (fixed position)
+// ============================================================
+
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Play, Pin, Images, Megaphone, Star } from "lucide-react";
@@ -7,6 +18,8 @@ import uniLogo from "../assets/University_of_Douala_Logo.jpg";
 import uniImg from "../assets/uni.JPG";
 import Countdown from "../components/countdown";
 import { supabase } from "../lib/superbase";
+import PartnersMarquee from "../components/PartnersMarquee";
+import { TestimonialsCarousel, FeedbackFAB } from "../components/TestimonialsWidget";
 
 import illuCohesion    from "../assets/icon-cohesion.svg";
 import illuExcellence  from "../assets/icon-trophy.svg";
@@ -152,7 +165,6 @@ const CSS = `
   }
   .hero-cta { display: flex; gap: 0.875rem; flex-wrap: wrap; }
 
-  /* Hero right top */
   .hero-r-top {
     padding: 2.5rem 2.5rem 2rem;
     border-bottom: 1px solid var(--rule);
@@ -165,7 +177,6 @@ const CSS = `
     color: var(--muted); text-transform: uppercase; margin-bottom: 5px;
   }
 
-  /* Stats grid */
   .stats-grid { display: grid; grid-template-columns: 1fr 1fr; flex: 1; }
   .stat-cell {
     padding: 1.875rem 2.5rem;
@@ -431,7 +442,6 @@ const CSS = `
     display: grid; grid-template-columns: repeat(3, 1fr);
     max-width: 1280px; margin: 0 auto;
   }
-  .sp-item { }
   .sp-item + .sp-item { border-left: 1px solid var(--rule); }
   .sp-top-bar { height: 4px; }
   .sp-inner { padding: 2.75rem 2.5rem; }
@@ -514,10 +524,9 @@ const CSS = `
   }
   .btn-outline--white:hover { background: rgba(255,255,255,0.1); border-color: #fff; color: #fff; }
 
-  /* Divider */
   .v-divider { width: 1px; height: 44px; background: var(--rule); }
 
-  /* ─────── TABLET ≤ 1024px ─────── */
+  /* ── RESPONSIVE ── */
   @media (max-width: 1024px) {
     .hero-l { padding: 3.5rem 2.5rem 3rem; }
     .uni-r { padding: 3rem 2.5rem; }
@@ -537,52 +546,41 @@ const CSS = `
     .sp-inner { padding: 2.25rem 2rem; }
   }
 
-  /* ─────── MOBILE ≤ 768px ─────── */
   @media (max-width: 768px) {
     .hero-grid { grid-template-columns: 1fr; }
     .hero-l { border-right: none; border-bottom: 1px solid var(--rule); padding: 2.75rem 1.5rem 2.5rem; gap: 2.25rem; }
     .hero-r-top { padding: 2rem 1.5rem; }
     .stat-cell { padding: 1.5rem 1.5rem; }
     .hero-patron { padding: 1rem 1.5rem; }
-
     .uni-grid { grid-template-columns: 1fr; }
     .uni-img-wrap { min-height: 280px; }
     .uni-r { padding: 2.5rem 1.5rem; }
     .uni-top .v-divider { display: none; }
-
     .ann-grid { grid-template-columns: 1fr; }
     .ann-item + .ann-item { border-left: none; border-top: 1px solid var(--rule); }
     .ann-body { padding: 1.75rem 1.5rem; }
-
     .obj-grid { grid-template-columns: 1fr; }
     .obj-item + .obj-item { border-left: none !important; border-right: none !important; border-top: 1px solid var(--rule); }
     .obj-item:nth-child(1), .obj-item:nth-child(2) { border-bottom: none; }
     .obj-item { padding: 2.25rem 1.5rem; }
-
     .prog-grid { grid-template-columns: 1fr; }
     .prog-item + .prog-item { border-left: none; border-top: 1px solid var(--rule); }
     .prog-item { padding: 2rem 1.5rem; }
     .prog-row-b { border-bottom: none; }
-
     .sp-grid { grid-template-columns: 1fr; }
     .sp-item + .sp-item { border-left: none; border-top: 1px solid var(--rule); }
     .sp-inner { padding: 2rem 1.5rem; }
-
     .gallery-grid { grid-template-columns: repeat(2, 1fr); }
     .gal-item + .gal-item { border-left: none; }
     .gal-item:nth-child(even) { border-left: 1px solid var(--rule) !important; }
-
     .cta-grid { grid-template-columns: 1fr; min-height: auto; }
     .cta-l { border-right: none; border-bottom: 1px solid var(--rule); padding: 3rem 1.5rem; }
     .cta-r { padding: 3rem 1.5rem; }
-
     .sec-hdr { padding: 1.25rem 1.5rem; flex-direction: column; align-items: flex-start; }
     .hide-mob { display: none !important; }
-
     .hero-h1 { font-size: clamp(3.5rem, 16vw, 6rem); }
   }
 
-  /* ─────── SMALL ≤ 400px ─────── */
   @media (max-width: 400px) {
     .hero-l { padding: 2.25rem 1.125rem 2rem; }
     .gallery-grid { grid-template-columns: 1fr; }
@@ -662,7 +660,6 @@ export default function Home() {
       {/* ── HERO ── */}
       <section className="hero-section">
         <div className="hero-grid">
-          {/* Left */}
           <div className="hero-l">
             <div>
               <div className="hero-badge" style={{ opacity: loaded ? 1 : 0, transform: loaded ? "none" : "translateY(10px)", transition: "all 0.5s ease 0.1s" }}>
@@ -687,7 +684,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right */}
           <div className="hero-r" style={{ opacity: loaded ? 1 : 0, transition: "opacity 0.75s ease 0.35s" }}>
             <div className="hero-r-top">
               <img src={logo} alt="STUD 2026" style={{ height: 60, width: "auto" }} />
@@ -773,8 +769,7 @@ export default function Home() {
         ) : (
           <div className="gallery-grid">
             {galleryItems.map((item, i) => (
-              <Link key={item.id} to="/gallery" className="gal-item"
-                style={fadeIn(mediaV, i)}>
+              <Link key={item.id} to="/gallery" className="gal-item" style={fadeIn(mediaV, i)}>
                 {item.type === "video" ? (
                   <div style={{ width: "100%", height: "100%", background: "#0D1B2A", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(255,255,255,0.2)" }}>
@@ -865,7 +860,7 @@ export default function Home() {
             const isDark = i === 0;
             return (
               <div key={i}
-                className={`prog-item ${i % 3 !== 2 ? "" : ""} ${i < 3 ? "prog-row-b" : ""} ${isDark ? "prog-item--dark" : ""}`}
+                className={`prog-item ${i < 3 ? "prog-row-b" : ""} ${isDark ? "prog-item--dark" : ""}`}
                 style={{
                   color: isDark ? "rgba(255,255,255,0.9)" : "var(--ink)",
                   borderLeft: i % 3 !== 0 ? "1px solid var(--rule)" : "none",
@@ -922,6 +917,12 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── PARTNERS MARQUEE ─────────────────────────────── NEW ── */}
+      <PartnersMarquee />
+
+      {/* ── TESTIMONIALS CAROUSEL ────────────────────────── NEW ── */}
+      <TestimonialsCarousel />
+
       {/* ── BOTTOM CTA ── */}
       <section className="cta-section">
         <div className="cta-grid">
@@ -945,6 +946,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── FEEDBACK FAB (fixed, bottom-right) ──────────── NEW ── */}
+      <FeedbackFAB />
     </div>
   );
 }

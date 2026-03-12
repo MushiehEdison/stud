@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/superbase";
 import { Pin, Share2, ChevronDown } from "lucide-react";
+import { FeedbackFAB } from "../components/TestimonialsWidget";
 
 const CATEGORIES = ["Tous", "Général", "Sport", "Culture", "Logistique"];
 const CAT_COLORS = { Général: "#1565C0", Sport: "#F57C00", Culture: "#F9A825", Logistique: "#6B7280" };
@@ -156,6 +157,9 @@ export default function Announcements() {
         @keyframes feedIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
         @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
       `}</style>
+
+      {/* ── FEEDBACK FAB (fixed, bottom-right) ──────────── NEW ── */}
+            <FeedbackFAB />
     </div>
   );
 }

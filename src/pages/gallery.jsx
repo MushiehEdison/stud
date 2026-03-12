@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/superbase";
 import { Play, Heart, ZoomIn, X } from "lucide-react";
+import { FeedbackFAB } from "../components/TestimonialsWidget";
 
 const CATEGORIES = ["Tous", "Sports", "Culture", "Cérémonie", "Coulisses"];
 
@@ -156,6 +157,10 @@ export default function Gallery() {
         @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
         @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
       `}</style>
+
+      {/* ── FEEDBACK FAB (fixed, bottom-right) ──────────── NEW ── */}
+            <FeedbackFAB />{/* ── FEEDBACK FAB (fixed, bottom-right) ──────────── NEW ── */}
+                  <FeedbackFAB />
     </div>
   );
 }

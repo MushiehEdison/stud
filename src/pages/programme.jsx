@@ -8,7 +8,7 @@ import {
 import iconSport     from "../assets/icon-sport.svg";
 import iconCulture   from "../assets/icon-culture.svg";
 import iconIntellect from "../assets/icon-intellect.svg";
-
+import { FeedbackFAB } from "../components/TestimonialsWidget";
 function useInView(t = 0.05) {
   const ref = useRef(null);
   const [v, setV] = useState(false);
@@ -338,6 +338,9 @@ export default function Programme() {
           </div>
         ))}
       </div>
+      {/* ── FEEDBACK FAB (fixed, bottom-right) ──────────── NEW ── */}
+      <FeedbackFAB />
+
     </div>
   );
 }
