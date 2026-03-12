@@ -141,13 +141,13 @@ const CSS = `
     width: auto;
     height: auto;
     object-fit: contain;
-    filter: grayscale(100%) opacity(0.45);
+    filter: none;
     transition: filter 0.4s ease, transform 0.4s ease;
     display: block;
   }
 
   .mq-card:hover .mq-logo-box img {
-    filter: grayscale(0%) opacity(1);
+    filter: none;
     transform: scale(1.07);
   }
 

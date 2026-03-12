@@ -1,83 +1,71 @@
 // ============================================================
 // FacultyStrip.jsx — Ils Prennent Part
 // Établissements de l'Université de Douala
-//
-// Logo strategy:
-//   - Real <img> where a verified URL exists
-//   - Text-only badge (abbr + full name) for the rest
-//
-// Place in home.jsx: AFTER Gallery Preview, BEFORE Announcements
+// Uses local imported logos — same pattern as PartnersMarquee
 // ============================================================
 
 import { useState } from "react";
+
+// ── local logo imports ────────────────────────────────────
+import logoFSEGA  from "../assets/eco.png";
+import logoENSET  from "../assets/enset.png";
+import logoESSEC  from "../assets/essec.png";
+import logoFDS    from "../assets/fds.png";
+import logoIBA    from "../assets/iba.png";
+import logoISH    from "../assets/ish.png";
+import logoIUT    from "../assets/iut.png";
+import logoFLSH   from "../assets/letter.png";
 
 const FACULTIES = [
   {
     abbr: "ENSET",
     name: "École Normale Sup. d'Enseignement Technique",
     color: "#33691E",
-    logoUrl: "https://enset-douala.cm/wp-content/uploads/2025/07/LOGO-ENSET-UNIVERSITE-DOUALA-400x89.png",
-  },
-  {
-    abbr: "FMSP",
-    name: "Médecine & Sciences Pharmaceutiques",
-    color: "#880E4F",
-    logoUrl: "https://www.fmsp-udo.cm/upload/images/compagny/Logo%20FMSP.png",
-  },
-  {
-    abbr: "FLSH",
-    name: "Lettres & Sciences Humaines",
-    color: "#7B3F99",
-    logoUrl: null,
-  },
-  {
-    abbr: "FS",
-    name: "Faculté des Sciences",
-    color: "#1565C0",
-    logoUrl: null,
-  },
-  {
-    abbr: "FSJP",
-    name: "Sciences Juridiques & Politiques",
-    color: "#B71C1C",
-    logoUrl: null,
+    logo: logoENSET,
   },
   {
     abbr: "FSEGA",
     name: "Sciences Éco. & de Gestion Appliquée",
     color: "#E65100",
-    logoUrl: null,
-  },
-  {
-    abbr: "ENSPD",
-    name: "École Nationale Sup. Polytechnique",
-    color: "#004D40",
-    logoUrl: null,
-  },
-  {
-    abbr: "IUT",
-    name: "Institut Univ. de Technologie",
-    color: "#01579B",
-    logoUrl: null,
+    logo: logoFSEGA,
   },
   {
     abbr: "ESSEC",
     name: "Sciences Éco. & Commerciales",
     color: "#F57C00",
-    logoUrl: null,
+    logo: logoESSEC,
+  },
+  {
+    abbr: "FS",
+    name: "Faculté des Sciences",
+    color: "#1565C0",
+    logo: logoFDS,
   },
   {
     abbr: "IBA",
     name: "Institut des Beaux-Arts",
     color: "#6A1B9A",
-    logoUrl: null,
+    logo: logoIBA,
   },
   {
     abbr: "ISH",
     name: "Institut des Sciences Halieutiques",
     color: "#00695C",
-    logoUrl: null,
+    logo: logoISH,
   },
+  {
+    abbr: "IUT",
+    name: "Institut Univ. de Technologie",
+    color: "#01579B",
+    logo: logoIUT,
+  },
+  {
+    abbr: "FLSH",
+    name: "Lettres & Sciences Humaines",
+    color: "#7B3F99",
+    logo: logoFLSH,
+  },
+
 ];
 
 // 4× repeat for seamless loop
@@ -167,22 +155,22 @@ const CSS = `
     display: flex;
     align-items: center;
     justify-content: center;
-    filter: grayscale(55%) opacity(0.65);
+    filter: none;
     transition: filter 0.35s ease, transform 0.35s ease;
   }
   .fac-img-wrap img {
     max-height: 80px;
-    max-width: 200px;
+    max-width: 130px;
     width: auto;
     object-fit: contain;
     display: block;
   }
   .fac-card:hover .fac-img-wrap {
-    filter: grayscale(0%) opacity(1);
+    filter: none;
     transform: scale(1.06);
   }
 
-  /* text badge */
+  /* text badge — fallback for schools without a logo */
   .fac-text-badge {
     display: flex;
     flex-direction: column;
@@ -192,7 +180,7 @@ const CSS = `
     border: 1.5px solid currentColor;
     min-width: 110px;
     min-height: 80px;
-    opacity: 0.45;
+    opacity: 1;
     transition: opacity 0.35s ease, transform 0.35s ease;
   }
   .fac-card:hover .fac-text-badge {
@@ -238,14 +226,14 @@ const CSS = `
 
 function FacultyCard({ fac }) {
   const [imgError, setImgError] = useState(false);
-  const showImg = fac.logoUrl && !imgError;
+  const showImg = fac.logo && !imgError;
 
   return (
     <div className="fac-card">
       {showImg ? (
         <div className="fac-img-wrap">
           <img
-            src={fac.logoUrl}
+            src={fac.logo}
             alt={fac.abbr}
             onError={() => setImgError(true)}
           />

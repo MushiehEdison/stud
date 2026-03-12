@@ -748,7 +748,8 @@ export default function Home() {
           </div>
         </div>
       </section>
-
+      {/* ── PARTNERS MARQUEE ─────────────────────────────── NEW ── */}
+      <PartnersMarquee />
       {/* ── GALLERY PREVIEW ── */}
       <section ref={mediaRef} className="gallery-section">
         <div className="sec-hdr">
@@ -916,9 +917,6 @@ export default function Home() {
           ))}
         </div>
       </section>
-
-      {/* ── PARTNERS MARQUEE ─────────────────────────────── NEW ── */}
-      <PartnersMarquee />
 
       {/* ── TESTIMONIALS CAROUSEL ────────────────────────── NEW ── */}
       <TestimonialsCarousel />
