@@ -6,12 +6,14 @@
 // ── Import your logo files here (Vite requires static imports) ──
 import logoPad     from "../assets/pad.png";
 import logoTradex  from "../assets/tradex.png";
+import logoTotal    from "../assets/total.png";
 import logoBossion from "../assets/bdc.webp";
 import logoOrange  from "../assets/orange.webp";
 
 const PARTNERS = [
   { name: "Port Autonome de Douala", short: "PAD",    logo: logoPad     },
   { name: "Tradex",                  short: "TRADEX", logo: logoTradex  },
+  { name: "Total Energies",          short: "TOTAL",  logo: logoTotal   },
   { name: "Brasseries du Cameroun",  short: "BOSSION",logo: logoBossion },
   { name: "Orange Cameroun",         short: "ORANGE", logo: logoOrange  },
 ];
