@@ -532,7 +532,9 @@ export default function Home() {
           .g3{grid-template-columns:repeat(2,1fr) !important;}
           .g4{grid-template-columns:repeat(2,1fr) !important;}
           .feed-grid{grid-template-columns:1fr !important;grid-template-rows:auto !important;}
-          .feed-big{grid-row:auto !important;}
+          .feed-big{grid-row:auto !important; height:260px !important;}
+          .feed-img-top{height:180px !important;}
+          .feed-side{grid-template-columns:1fr 1fr !important; height:160px !important;}
           .stats-g{grid-template-columns:repeat(2,1fr) !important;}
         }
         @media(max-width:640px){
@@ -552,8 +554,9 @@ export default function Home() {
 
           /* feed grid — single column on mobile */
           .feed-grid{grid-template-columns:1fr !important;grid-template-rows:auto !important;}
-          .feed-big{grid-row:auto !important; min-height:220px !important;}
-          .feed-side{grid-template-columns:1fr 1fr !important;}
+          .feed-big{grid-row:auto !important; height:220px !important;}
+          .feed-img-top{height:160px !important;}
+          .feed-side{grid-template-columns:1fr 1fr !important; height:150px !important;}
 
           /* section headers */
           .sec-hdr-mob{padding:0.875rem 1.25rem !important; flex-wrap:wrap !important;}
@@ -573,10 +576,25 @@ export default function Home() {
 
           /* general padding */
           .pad-mob{padding:1.5rem 1.25rem !important;}
+
+          /* fix partners strip height */
+          .partner-strip{height:48px !important;}
+
+          /* announcement card in grid — ensure not hidden */
+          .feed-side > *{min-height:140px !important;}
+
+          /* wide strip */
+          .feed-strip{height:110px !important;}
+
+          /* section spacers */
+          .sec-hdr-mob{padding:0.875rem 1.25rem !important;}
         }
         @media(max-width:400px){
           .g4{grid-template-columns:1fr !important;}
           .stats-g{grid-template-columns:1fr 1fr !important;}
+          .feed-big{height:190px !important;}
+          .feed-side{height:130px !important;}
+          .feed-img-top{height:130px !important;}
         }
       `}</style>
 
@@ -639,7 +657,7 @@ export default function Home() {
       ════════════════════════════ */}
       <div style={{ background:"#fff", borderBottom:S.rule }}>
         <div className="ibar" style={{ ...S.maxW, display:"flex", alignItems:"center",
-          gap:"1.75rem", padding:"1.5rem 2.5rem", flexWrap:"wrap" }}>
+          gap:"1.5rem", padding:"1.5rem 2.5rem", flexWrap:"wrap" }}>
 
           <div className="ld0" style={{ display:"flex", alignItems:"center", gap:"1rem", flexShrink:0 }}>
             <img src={logo} alt="STUD 2026" style={{ height:48, width:"auto" }} />
@@ -730,7 +748,11 @@ export default function Home() {
                   background:"#4CAF50", display:"inline-block",
                   boxShadow:"0 0 0 2px rgba(76,175,80,.3)",
                   animation:"livepulse 2s infinite" }} />
-                
+                <span className="ff-m" style={{ fontSize:"0.48rem",
+                  letterSpacing:"0.2em", textTransform:"uppercase",
+                  color:"rgba(255,255,255,.4)" }}>
+                  Site en ligne
+                </span>
               </div>
               <div className="visitor-divider" style={{ width:1, height:16,
                 background:"rgba(255,255,255,.1)" }} />
@@ -742,7 +764,7 @@ export default function Home() {
                 <span className="ff-m" style={{ fontSize:"0.46rem",
                   letterSpacing:"0.18em", textTransform:"uppercase",
                   color:"rgba(255,255,255,.4)" }}>
-                  visiteurs 
+                  visiteurs uniques
                 </span>
               </div>
               <div className="visitor-divider" style={{ width:1, height:16,
@@ -798,31 +820,33 @@ export default function Home() {
         </Reveal>
 
         {/* main 2-col grid */}
+        {/* Desktop: 2-col grid. Mobile: stacked via CSS classes */}
         <div ref={feedStagger} className="feed-grid"
           style={{ display:"grid", gridTemplateColumns:"1.5fr 1fr",
             gridTemplateRows:"240px 240px", gap:10, marginBottom:10 }}>
 
-          {/* BIG card — spans 2 rows */}
-          <ImgCard item={feed[0]} big style={{ gridRow:"1 / 3" }} className="feed-big" />
+          {/* BIG card — spans 2 rows on desktop, auto height on mobile */}
+          <ImgCard item={feed[0]} big
+            style={{ gridRow:"1 / 3" }}
+            className="feed-big" />
 
           {/* top-right: small image */}
-          <ImgCard item={feed[1]} style={{ borderRadius:10 }} />
+          <ImgCard item={feed[1]}
+            style={{ borderRadius:10 }}
+            className="feed-img-top" />
 
-          {/* bottom-right: announcements card + partners */}
+          {/* bottom-right: announcements + partners side by side */}
           <div className="feed-side"
             style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-
-            {/* ── ANNOUNCEMENTS CARD ── */}
             <AnnouncementsCard anns={anns} />
-
-            {/* partners carousel */}
             <PartnersCarouselCard />
           </div>
         </div>
 
-        {/* wide strip — 3rd gallery image */}
+        {/* wide strip — always visible */}
         <Reveal delay={0.1}>
-          <ImgCard item={feed[2]} style={{ height:140, borderRadius:10, display:"block" }} />
+          <ImgCard item={feed[2]}
+            style={{ height:140, borderRadius:10, display:"block" }} />
         </Reveal>
       </div>
 
