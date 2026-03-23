@@ -730,11 +730,7 @@ export default function Home() {
                   background:"#4CAF50", display:"inline-block",
                   boxShadow:"0 0 0 2px rgba(76,175,80,.3)",
                   animation:"livepulse 2s infinite" }} />
-                <span className="ff-m" style={{ fontSize:"0.48rem",
-                  letterSpacing:"0.2em", textTransform:"uppercase",
-                  color:"rgba(255,255,255,.4)" }}>
-                  Site en ligne
-                </span>
+                
               </div>
               <div className="visitor-divider" style={{ width:1, height:16,
                 background:"rgba(255,255,255,.1)" }} />
@@ -746,7 +742,7 @@ export default function Home() {
                 <span className="ff-m" style={{ fontSize:"0.46rem",
                   letterSpacing:"0.18em", textTransform:"uppercase",
                   color:"rgba(255,255,255,.4)" }}>
-                  visiteurs uniques
+                  visiteurs 
                 </span>
               </div>
               <div className="visitor-divider" style={{ width:1, height:16,
