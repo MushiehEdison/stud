@@ -9,7 +9,8 @@ import {
   ImagePlus, Plus, Trash2, Pin, PinOff,
   Lock, LogOut, Upload, X, MessageSquare,
   ClipboardList, Star, ChevronDown, ChevronUp,
-  Download, BarChart2,
+  Download, BarChart2, Image, Megaphone,
+  MessageCircle, BarChart, TrendingUp,
 } from "lucide-react";
 import { fetchDailyStats } from "../lib/useVisitorTracker";
 
@@ -863,10 +864,43 @@ export default function AdminPanel() {
     <div style={{ background:"#F0F4F8", minHeight:"100vh" }}>
 
       <style>{`
+        /* ── Mobile bottom tab bar ── */
+        .admin-bottom-tabs {
+          display: none;
+        }
+        .admin-top-tabs {
+          display: flex;
+        }
+
         @media (max-width: 768px) {
+          /* Hide top tabs on mobile */
+          .admin-top-tabs { display: none !important; }
+
+          /* Show bottom tabs on mobile */
+          .admin-bottom-tabs {
+            display: flex;
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: #fff;
+            border-top: 1.5px solid #EAEAE5;
+            z-index: 100;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+          }
+
+          /* Push content above bottom tabs */
+          .admin-content-pad {
+            padding-bottom: 72px !important;
+          }
+
+          /* Stack form layouts */
           .admin-layout { grid-template-columns: 1fr !important; }
           .eval-stats-grid { grid-template-columns: repeat(2,1fr) !important; }
           .eval-detail-grid { grid-template-columns: 1fr !important; }
+
+          /* Topbar smaller */
+          .admin-topbar { padding: 0 1rem !important; }
+          .admin-topbar-title { font-size: 1.1rem !important; }
+          .admin-topbar-sub { display: none !important; }
         }
         @media (max-width: 480px) {
           .eval-stats-grid { grid-template-columns: 1fr !important; }
@@ -874,15 +908,15 @@ export default function AdminPanel() {
       `}</style>
 
       {/* topbar */}
-      <div style={{ background:"#0D1B2A", borderBottom:"3px solid #1565C0",
+      <div className="admin-topbar" style={{ background:"#0D1B2A", borderBottom:"3px solid #1565C0",
         padding:"0 2rem", display:"flex", alignItems:"center",
         height:56, gap:"1.5rem" }}>
-        <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"1.4rem",
+        <div className="admin-topbar-title" style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"1.4rem",
           letterSpacing:"0.06em", color:"#fff" }}>
           ADMIN STUD 2026
         </div>
         <div style={{ height:20, width:1, background:"rgba(255,255,255,0.15)" }} />
-        <div style={{ fontFamily:"'DM Mono',monospace", fontSize:"0.56rem",
+        <div className="admin-topbar-sub" style={{ fontFamily:"'DM Mono',monospace", fontSize:"0.56rem",
           letterSpacing:"0.14em", color:"rgba(255,255,255,0.4)",
           textTransform:"uppercase" }}>
           Tableau de bord
@@ -899,9 +933,9 @@ export default function AdminPanel() {
         </button>
       </div>
 
-      {/* tabs */}
-      <div style={{ background:"#fff", borderBottom:"1.5px solid #EAEAE5",
-        display:"flex", overflowX:"auto" }}>
+      {/* tabs — hidden on mobile, replaced by bottom tabs */}
+      <div className="admin-top-tabs" style={{ background:"#fff", borderBottom:"1.5px solid #EAEAE5",
+        overflowX:"auto" }}>
         {[
           { key:"gallery",       label:"Galerie",      icon:"🖼",  count:gallery.length },
           { key:"announcements", label:"Annonces",     icon:"📢",  count:anns.length },
@@ -931,7 +965,7 @@ export default function AdminPanel() {
         })}
       </div>
 
-      <div style={{ maxWidth:1100, margin:"0 auto", padding:"2rem" }}>
+      <div className="admin-content-pad" style={{ maxWidth:1100, margin:"0 auto", padding:"2rem" }}>
 
         {/* ══ GALLERY ══ */}
         {tab === "gallery" && (
@@ -1448,6 +1482,82 @@ export default function AdminPanel() {
         )}
 
       </div>
+
+      {/* ── BOTTOM TAB BAR — mobile only ── */}
+      <div className="admin-bottom-tabs">
+        {[
+          { key:"gallery",       label:"Galerie",     IconComp:Image },
+          { key:"announcements", label:"Annonces",    IconComp:Megaphone },
+          { key:"testimonials",  label:"Avis",        IconComp:MessageCircle },
+          { key:"evaluations",   label:"Évals",       IconComp:ClipboardList },
+          { key:"traffic",       label:"Trafic",      IconComp:TrendingUp },
+        ].map(function(t) {
+          var active = tab === t.key;
+          var counts = {
+            gallery:       gallery.length,
+            announcements: anns.length,
+            testimonials:  testis.length,
+            evaluations:   evals.length,
+            traffic:       trafTotal,
+          };
+          var count = counts[t.key];
+          return (
+            <button key={t.key}
+              onClick={function() { setTab(t.key); }}
+              style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "3px",
+                padding: "10px 4px 8px",
+                border: "none",
+                background: "transparent",
+                cursor: "pointer",
+                color: active ? "#1565C0" : "#88887F",
+                borderTop: active ? "2px solid #1565C0" : "2px solid transparent",
+                transition: "color .2s",
+                position: "relative",
+                minWidth: 0,
+              }}>
+              <t.IconComp size={20} strokeWidth={active ? 2 : 1.5} />
+              <span style={{
+                fontFamily: "'DM Mono',monospace",
+                fontSize: "0.42rem",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                fontWeight: active ? 700 : 400,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                maxWidth: "100%",
+              }}>
+                {t.label}
+              </span>
+              {/* badge for counts */}
+              {count !== null && count > 0 && (
+                <span style={{
+                  position: "absolute",
+                  top: 6, right: "calc(50% - 16px)",
+                  background: active ? "#1565C0" : "#EAEAE5",
+                  color: active ? "#fff" : "#88887F",
+                  fontSize: "0.38rem",
+                  fontFamily: "'DM Mono',monospace",
+                  borderRadius: 99,
+                  padding: "1px 4px",
+                  lineHeight: 1.4,
+                  minWidth: 14,
+                  textAlign: "center",
+                }}>
+                  {count > 99 ? "99+" : count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
     </div>
   );
 }
