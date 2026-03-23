@@ -227,6 +227,103 @@ function PartnersCarouselCard() {
 }
 
 // ─────────────────────────────────────────────────────────────
+// AnnouncementsCard — auto-cycling ticker card for the image grid
+// ─────────────────────────────────────────────────────────────
+function AnnouncementsCard({ anns }) {
+  const [idx, setIdx] = useState(0);
+  const [sliding, setSliding] = useState(false);
+  const CAT_C = { Général:"#1565C0", Sport:"#F57C00", Culture:"#F9A825", Logistique:"#6B7280" };
+
+  useEffect(() => {
+    if (!anns.length) return;
+    const t = setInterval(() => {
+      setSliding(true);
+      setTimeout(() => {
+        setIdx(i => (i + 1) % anns.length);
+        setSliding(false);
+      }, 350);
+    }, 3500);
+    return () => clearInterval(t);
+  }, [anns.length]);
+
+  if (!anns.length) {
+    return (
+      <div style={{ background:"#0A0A0A", borderRadius:10, display:"flex",
+        alignItems:"center", justifyContent:"center" }}>
+        <span style={{ fontFamily:"'DM Mono',monospace", fontSize:"0.44rem",
+          color:"rgba(255,255,255,0.18)", letterSpacing:"0.18em",
+          textTransform:"uppercase" }}>Annonces</span>
+      </div>
+    );
+  }
+
+  const ann = anns[idx];
+  const cc  = CAT_C[ann.category] || "#1565C0";
+
+  return (
+    <Link to="/announcements" style={{ textDecoration:"none", display:"block",
+      background:"#0A0A0A", borderRadius:10, overflow:"hidden",
+      position:"relative", height:"100%" }}>
+      {/* color bar */}
+      <div style={{ height:3, background:cc, transition:"background .4s ease",
+        flexShrink:0 }} />
+      {/* dot grid bg */}
+      <div style={{ position:"absolute", inset:0, opacity:0.04, pointerEvents:"none",
+        backgroundImage:"radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)",
+        backgroundSize:"18px 18px" }} />
+      {/* content */}
+      <div style={{ position:"relative", padding:"0.75rem 0.875rem",
+        display:"flex", flexDirection:"column", height:"calc(100% - 3px)",
+        justifyContent:"space-between" }}>
+        {/* header */}
+        <div style={{ display:"flex", alignItems:"center",
+          justifyContent:"space-between", marginBottom:"0.4rem" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:"0.35rem" }}>
+            <span style={{ width:5, height:5, borderRadius:"50%", background:cc,
+              display:"inline-block", animation:"livepulse 2s infinite" }} />
+            <span style={{ fontFamily:"'DM Mono',monospace", fontSize:"0.38rem",
+              letterSpacing:"0.2em", textTransform:"uppercase",
+              color:"rgba(255,255,255,0.38)" }}>Annonces</span>
+          </div>
+          <span style={{ fontFamily:"'DM Mono',monospace", fontSize:"0.36rem",
+            color:"rgba(255,255,255,0.2)" }}>{idx + 1}/{anns.length}</span>
+        </div>
+        {/* body */}
+        <div style={{ flex:1, overflow:"hidden",
+          opacity: sliding ? 0 : 1,
+          transform: sliding ? "translateY(8px)" : "translateY(0)",
+          transition:"opacity .35s ease, transform .35s ease" }}>
+          <div style={{ fontFamily:"'DM Mono',monospace", fontSize:"0.4rem",
+            letterSpacing:"0.14em", textTransform:"uppercase",
+            color:cc, marginBottom:"0.3rem" }}>{ann.category}</div>
+          <p style={{ fontFamily:"'Fraunces',serif", fontWeight:700,
+            fontSize:"0.76rem", color:"#fff", lineHeight:1.35, margin:0,
+            display:"-webkit-box", WebkitLineClamp:3,
+            WebkitBoxOrient:"vertical", overflow:"hidden" }}>
+            {ann.title}
+          </p>
+        </div>
+        {/* dot progress */}
+        <div style={{ display:"flex", gap:3, marginTop:"0.4rem", alignItems:"center" }}>
+          {anns.slice(0, 5).map((_, i) => (
+            <div key={i} style={{ height:3, borderRadius:2,
+              width: i === idx ? 12 : 4,
+              background: i === idx ? cc : "rgba(255,255,255,0.15)",
+              transition:"width .3s ease, background .3s ease" }} />
+          ))}
+          {anns.length > 5 && (
+            <span style={{ fontFamily:"'DM Mono',monospace", fontSize:"0.34rem",
+              color:"rgba(255,255,255,0.18)", marginLeft:2 }}>
+              +{anns.length - 5}
+            </span>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
 // ImgCard — full-bleed image, title overlay
 // ─────────────────────────────────────────────────────────────
 function ImgCard({ item, big = false, style = {} }) {
@@ -287,8 +384,25 @@ export default function Home() {
   useVisitorTracker();
 
   // Fetch total unique visitors for counter
+  // Real-time visitor count — updates live without page refresh
   useEffect(() => {
+    // Initial fetch
     fetchTotalVisitors().then(n => { if (n !== null) setVisitorCount(n); });
+
+    // Subscribe to inserts on site_visits table
+    const channel = supabase
+      .channel("visitor-count")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "site_visits" },
+        () => {
+          // New visit inserted → refetch total
+          fetchTotalVisitors().then(n => { if (n !== null) setVisitorCount(n); });
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
   const [anns,    setAnns]    = useState([]);
 
@@ -412,7 +526,7 @@ export default function Home() {
         .p-logo { transition:transform .25s; }
         .p-logo:hover { transform:scale(1.06); }
 
-        /* responsive */
+        /* ── RESPONSIVE ── */
         @media(max-width:900px){
           .g2{grid-template-columns:1fr !important;}
           .g3{grid-template-columns:repeat(2,1fr) !important;}
@@ -421,12 +535,48 @@ export default function Home() {
           .feed-big{grid-row:auto !important;}
           .stats-g{grid-template-columns:repeat(2,1fr) !important;}
         }
-        @media(max-width:560px){
+        @media(max-width:640px){
+          .g2{grid-template-columns:1fr !important;}
           .g3{grid-template-columns:1fr !important;}
-          .g4{grid-template-columns:1fr !important;}
+          .g4{grid-template-columns:repeat(2,1fr) !important;}
           .hide-sm{display:none !important;}
-          .ibar{padding:1.25rem !important;}
+
+          /* identity bar — stack vertically */
+          .ibar{flex-direction:column !important; align-items:flex-start !important; padding:1rem 1.25rem !important; gap:0.875rem !important;}
+
+          /* stats — 2 columns */
+          .stats-g{grid-template-columns:repeat(2,1fr) !important;}
+
+          /* partner strip — tighter */
           .sec-pad{padding-left:1.25rem !important;padding-right:1.25rem !important;}
+
+          /* feed grid — single column on mobile */
+          .feed-grid{grid-template-columns:1fr !important;grid-template-rows:auto !important;}
+          .feed-big{grid-row:auto !important; min-height:220px !important;}
+          .feed-side{grid-template-columns:1fr 1fr !important;}
+
+          /* section headers */
+          .sec-hdr-mob{padding:0.875rem 1.25rem !important; flex-wrap:wrap !important;}
+
+          /* objectives — 2 col on mobile */
+          .g4{grid-template-columns:repeat(2,1fr) !important;}
+
+          /* prog/sp — 1 col */
+          .g3-mob{grid-template-columns:1fr !important;}
+
+          /* CTA */
+          .cta-mob{grid-template-columns:1fr !important; min-height:auto !important;}
+
+          /* visitor strip */
+          .visitor-strip{flex-direction:column !important; gap:0.5rem !important; text-align:center !important;}
+          .visitor-divider{display:none !important;}
+
+          /* general padding */
+          .pad-mob{padding:1.5rem 1.25rem !important;}
+        }
+        @media(max-width:400px){
+          .g4{grid-template-columns:1fr !important;}
+          .stats-g{grid-template-columns:1fr 1fr !important;}
         }
       `}</style>
 
@@ -572,7 +722,7 @@ export default function Home() {
       {visitorCount !== null && (
         <Reveal>
           <div style={{ background:"#0A0A0A", borderBottom:S.ruleHeavy }}>
-            <div style={{ ...S.maxW, display:"flex", alignItems:"center",
+            <div className="visitor-strip" style={{ ...S.maxW, display:"flex", alignItems:"center",
               justifyContent:"center", gap:"1rem", padding:"0.75rem 2.5rem",
               flexWrap:"wrap" }}>
               <div style={{ display:"flex", alignItems:"center", gap:"0.5rem" }}>
@@ -586,7 +736,7 @@ export default function Home() {
                   Site en ligne
                 </span>
               </div>
-              <div style={{ width:1, height:16,
+              <div className="visitor-divider" style={{ width:1, height:16,
                 background:"rgba(255,255,255,.1)" }} />
               <div style={{ display:"flex", alignItems:"baseline", gap:"0.5rem" }}>
                 <span className="ff-b" style={{ fontSize:"1.4rem",
@@ -599,7 +749,7 @@ export default function Home() {
                   visiteurs uniques
                 </span>
               </div>
-              <div style={{ width:1, height:16,
+              <div className="visitor-divider" style={{ width:1, height:16,
                 background:"rgba(255,255,255,.1)" }} />
               <span className="ff-m" style={{ fontSize:"0.44rem",
                 letterSpacing:"0.14em", textTransform:"uppercase",
@@ -613,9 +763,15 @@ export default function Home() {
 
       {/* ════════════════════════════
           4. VISUAL FEED
-          Big card + 3 small + partners carousel
+          Big card left + right column:
+            - small image
+            - announcements card (cool ticker style)
+            - partners carousel
+          Bottom: wide image strip
       ════════════════════════════ */}
-      <div style={{ ...S.maxW, padding:"2rem 2.5rem" }}>
+      <div className="pad-mob" style={{ ...S.maxW, padding:"2rem 2.5rem" }}>
+
+        {/* section header */}
         <Reveal delay={0.05}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
             marginBottom:"1rem", flexWrap:"wrap", gap:"0.5rem" }}>
@@ -626,34 +782,51 @@ export default function Home() {
                 Moments en <span style={{color:"#1565C0"}}>Images</span>
               </span>
             </div>
-            <Link to="/gallery" className="lnk ff-m"
-              style={{ border:"1px solid #1565C0", color:"#1565C0", padding:"0.28rem 0.7rem",
-                fontSize:"0.5rem", letterSpacing:"0.14em", textTransform:"uppercase",
-                textDecoration:"none", display:"inline-flex", alignItems:"center",
-                gap:"0.3rem", borderRadius:2 }}>
-              Galerie <ArrowRight size={9} />
-            </Link>
+            <div style={{ display:"flex", gap:"0.5rem", flexWrap:"wrap" }}>
+              <Link to="/announcements" className="lnk ff-m"
+                style={{ border:"1px solid #F57C00", color:"#F57C00", padding:"0.28rem 0.7rem",
+                  fontSize:"0.5rem", letterSpacing:"0.14em", textTransform:"uppercase",
+                  textDecoration:"none", display:"inline-flex", alignItems:"center",
+                  gap:"0.3rem", borderRadius:2 }}>
+                Annonces <ArrowRight size={9} />
+              </Link>
+              <Link to="/gallery" className="lnk ff-m"
+                style={{ border:"1px solid #1565C0", color:"#1565C0", padding:"0.28rem 0.7rem",
+                  fontSize:"0.5rem", letterSpacing:"0.14em", textTransform:"uppercase",
+                  textDecoration:"none", display:"inline-flex", alignItems:"center",
+                  gap:"0.3rem", borderRadius:2 }}>
+                Galerie <ArrowRight size={9} />
+              </Link>
+            </div>
           </div>
         </Reveal>
 
-        {/* main grid */}
+        {/* main 2-col grid */}
         <div ref={feedStagger} className="feed-grid"
           style={{ display:"grid", gridTemplateColumns:"1.5fr 1fr",
             gridTemplateRows:"240px 240px", gap:10, marginBottom:10 }}>
-          {/* big card — spans 2 rows */}
+
+          {/* BIG card — spans 2 rows */}
           <ImgCard item={feed[0]} big style={{ gridRow:"1 / 3" }} className="feed-big" />
-          {/* top right */}
+
+          {/* top-right: small image */}
           <ImgCard item={feed[1]} style={{ borderRadius:10 }} />
-          {/* bottom right: 2 side by side */}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-            <ImgCard item={feed[2]} style={{ borderRadius:10 }} />
+
+          {/* bottom-right: announcements card + partners */}
+          <div className="feed-side"
+            style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+
+            {/* ── ANNOUNCEMENTS CARD ── */}
+            <AnnouncementsCard anns={anns} />
+
+            {/* partners carousel */}
             <PartnersCarouselCard />
           </div>
         </div>
 
-        {/* 4th image — wide strip */}
+        {/* wide strip — 3rd gallery image */}
         <Reveal delay={0.1}>
-          <ImgCard item={feed[3]} style={{ height:150, borderRadius:10, display:"block" }} />
+          <ImgCard item={feed[2]} style={{ height:140, borderRadius:10, display:"block" }} />
         </Reveal>
       </div>
 
