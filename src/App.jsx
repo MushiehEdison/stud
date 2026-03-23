@@ -10,7 +10,8 @@ import Contact from "./pages/contact";
 import Gallery from "./pages/gallery";
 import Announcements from "./pages/announcements";
 import AdminPanel from "./pages/adminPanel";
-import EvaluationPage from "./pages/EvaluationPage";
+import EvaluationPage from "./pages/EvaluationPage";   // ← NEW
+import TestimonialsPage from "./pages/TestimonialsPage";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -37,7 +38,8 @@ export default function App() {
         <Route path="/stud-admin-2026" element={<AdminPanel />} />
 
         {/* ── Evaluation — no Navbar/Footer clutter, standalone ── */}
-        <Route path="/evaluation" element={<EvaluationPage />} />  {/* ← NEW */}
+        <Route path="/evaluation"   element={<EvaluationPage />} />
+        <Route path="/avis"  element={<TestimonialsPage />} />
 
         {/* ── Public routes ── */}
         <Route path="/*" element={

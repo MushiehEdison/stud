@@ -1,10 +1,3 @@
-// ============================================================
-// home.jsx — v5
-// ✓ Partner logos full color (no grayscale)
-// ✓ Announcements moved below FacultyStrip ("Ils Prendront Part")
-// ✓ Rich scroll animations — staggered fade-up, slide-in, scale
-// ✓ Partners carousel full color
-// ============================================================
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
@@ -912,7 +905,7 @@ export default function Home() {
               <span className="live" style={{ width:8, height:8, borderRadius:"50%",
                 background:"#F57C00", display:"inline-block" }} />
               <span className="ff-b" style={{ fontSize:"1.35rem", letterSpacing:"0.06em" }}>
-                Moments en <span style={{color:"#1565C0"}}>Images</span>
+                Moments Forts <span style={{color:"#1565C0"}}>STUD 2026</span>
               </span>
             </div>
             <div style={{ display:"flex", gap:"0.5rem", flexWrap:"wrap" }}>
