@@ -1012,9 +1012,21 @@ export default function AdminPanel() {
                       setGForm(function(f) { return Object.assign({}, f, { url:e.target.value }); });
                       setGFile(null);
                     }}
-                    placeholder="https://..."
+                    placeholder="https://... ou lien YouTube/Vimeo"
                     disabled={!!gFile}
                     style={Object.assign({}, inp, { opacity:gFile ? 0.5 : 1 })} />
+                  {/* YouTube/Vimeo hint */}
+                  {(gForm.url.includes("youtube") || gForm.url.includes("youtu.be") || gForm.url.includes("vimeo")) && !gFile && (
+                    <div style={{ marginTop:"0.4rem", padding:"0.5rem 0.75rem",
+                      background:"#EEF4FF", border:"1px solid #BBDEFB",
+                      borderRadius:4, display:"flex", alignItems:"center", gap:"0.5rem" }}>
+                      <span style={{ fontSize:"0.9rem" }}>✅</span>
+                      <span style={{ fontFamily:"'DM Mono',monospace", fontSize:"0.5rem",
+                        color:"#1565C0", letterSpacing:"0.1em" }}>
+                        Lien YouTube/Vimeo détecté — sera intégré automatiquement
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div>

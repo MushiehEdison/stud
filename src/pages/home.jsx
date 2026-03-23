@@ -51,6 +51,19 @@ const FEED_PLACEHOLDERS = [
 // ─────────────────────────────────────────────────────────────
 // useInView — fires once when element enters viewport
 // ─────────────────────────────────────────────────────────────
+// Tracks window width for responsive layout switching
+function useWindowWidth() {
+  const [width, setWidth] = useState(
+    typeof window !== "undefined" ? window.innerWidth : 1200
+  );
+  useEffect(() => {
+    const handler = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return width;
+}
+
 function useInView(threshold = 0.1) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
@@ -263,7 +276,7 @@ function AnnouncementsCard({ anns }) {
   return (
     <Link to="/announcements" style={{ textDecoration:"none", display:"block",
       background:"#0A0A0A", borderRadius:10, overflow:"hidden",
-      position:"relative", height:"100%" }}>
+      position:"relative", width:"100%", height:"100%" }}>
       {/* color bar */}
       <div style={{ height:3, background:cc, transition:"background .4s ease",
         flexShrink:0 }} />
@@ -297,10 +310,18 @@ function AnnouncementsCard({ anns }) {
             letterSpacing:"0.14em", textTransform:"uppercase",
             color:cc, marginBottom:"0.3rem" }}>{ann.category}</div>
           <p style={{ fontFamily:"'Fraunces',serif", fontWeight:700,
-            fontSize:"0.76rem", color:"#fff", lineHeight:1.35, margin:0,
-            display:"-webkit-box", WebkitLineClamp:3,
+            fontSize:"0.74rem", color:"#fff", lineHeight:1.3,
+            margin:"0 0 0.3rem 0",
+            display:"-webkit-box", WebkitLineClamp:2,
             WebkitBoxOrient:"vertical", overflow:"hidden" }}>
             {ann.title}
+          </p>
+          <p style={{ fontFamily:"'Fraunces',serif", fontStyle:"italic",
+            fontSize:"0.64rem", color:"rgba(255,255,255,0.45)",
+            lineHeight:1.4, margin:0,
+            display:"-webkit-box", WebkitLineClamp:2,
+            WebkitBoxOrient:"vertical", overflow:"hidden" }}>
+            {ann.body.length > 80 ? ann.body.slice(0, 80) + "…" : ann.body}
           </p>
         </div>
         {/* dot progress */}
@@ -314,7 +335,7 @@ function AnnouncementsCard({ anns }) {
           {anns.length > 5 && (
             <span style={{ fontFamily:"'DM Mono',monospace", fontSize:"0.34rem",
               color:"rgba(255,255,255,0.18)", marginLeft:2 }}>
-              +{anns.length - 5}
+              {"+" + (anns.length - 5)}
             </span>
           )}
         </div>
@@ -324,49 +345,151 @@ function AnnouncementsCard({ anns }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// ImgCard — full-bleed image, title overlay
+// URL helpers — YouTube / Vimeo detection
+// ─────────────────────────────────────────────────────────────
+function getYouTubeId(url) {
+  if (!url) return null;
+  const patterns = [
+    /youtu\.be\/([^?&]+)/,
+    /youtube\.com\/watch\?v=([^&]+)/,
+    /youtube\.com\/embed\/([^?&]+)/,
+    /youtube\.com\/shorts\/([^?&]+)/,
+  ];
+  for (const p of patterns) {
+    const m = url.match(p);
+    if (m) return m[1];
+  }
+  return null;
+}
+function getVimeoId(url) {
+  if (!url) return null;
+  const m = url.match(/vimeo\.com\/(\d+)/);
+  return m ? m[1] : null;
+}
+function getVideoThumb(url) {
+  const ytId = getYouTubeId(url);
+  if (ytId) return "https://img.youtube.com/vi/" + ytId + "/hqdefault.jpg";
+  return null;
+}
+function isEmbedVideo(url) {
+  return !!(getYouTubeId(url) || getVimeoId(url));
+}
+
+// ─────────────────────────────────────────────────────────────
+// ImgCard — shows full image (contain) inside a fixed box
+// No cropping. Dark background fills the letterbox gaps.
 // ─────────────────────────────────────────────────────────────
 function ImgCard({ item, big = false, style = {} }) {
-  const isVideo = item?.type === "video";
-  const label   = item?.caption || item?._label || "";
-  const cat     = item?.category || item?._cat   || "";
-  const bg      = item?._bg || "#1a2744";
+  const isVideo  = item?.type === "video";
+  const label    = item?.caption || item?._label || "";
+  const cat      = item?.category || item?._cat  || "";
+  const bg       = item?._bg || "#111827";
   const catColor = CAT_COLORS[cat] || "#1565C0";
+  const isEmbed  = isVideo && isEmbedVideo(item?.url);
+  const thumbUrl = isVideo ? getVideoThumb(item?.url) : null;
+  const videoRef = useRef(null);
+  const [hovered, setHovered] = useState(false);
 
   return (
-    <Link to="/gallery" style={{ display:"block", position:"relative", overflow:"hidden",
-      background:bg, textDecoration:"none", borderRadius:10, ...style }}>
+    <Link to="/gallery"
+      style={{ display:"block", position:"relative", overflow:"hidden",
+        background:bg, textDecoration:"none", borderRadius:10,
+        ...style }}
+      onMouseEnter={() => {
+        setHovered(true);
+        if (videoRef.current) videoRef.current.play().catch(() => {});
+      }}
+      onMouseLeave={() => {
+        setHovered(false);
+        if (videoRef.current) { videoRef.current.pause(); videoRef.current.currentTime = 0; }
+      }}>
+
+      {/* ── IMAGE: cover fills the box, zoom on hover ── */}
       {item?.url && !isVideo && (
         <img src={item.url} alt={label}
-          style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover",
-            transition:"transform .65s ease" }}
-          onMouseOver={e => e.currentTarget.style.transform = "scale(1.04)"}
-          onMouseOut={e => e.currentTarget.style.transform = "scale(1)"}
+          style={{ position:"absolute", inset:0, width:"100%", height:"100%",
+            objectFit:"cover",
+            transition:"transform .55s ease",
+            transform: hovered ? "scale(1.06)" : "scale(1)" }}
         />
       )}
+
+      {/* ── VIDEO: YouTube/Vimeo — use maxresdefault for best quality ── */}
+      {isVideo && isEmbed && (
+        <img
+          src={thumbUrl || ("https://img.youtube.com/vi/" + (getYouTubeId(item?.url) || "") + "/maxresdefault.jpg")}
+          alt={label}
+          onError={e => { e.currentTarget.src = "https://img.youtube.com/vi/" + (getYouTubeId(item?.url) || "") + "/hqdefault.jpg"; }}
+          style={{ position:"absolute", inset:0, width:"100%", height:"100%",
+            objectFit:"cover",
+            transition:"transform .5s ease",
+            transform: hovered ? "scale(1.06)" : "scale(1)" }}
+        />
+      )}
+
+      {/* ── VIDEO: direct file — hover preview ── */}
+      {isVideo && !isEmbed && item?.url && (
+        <video ref={videoRef} src={item.url} muted playsInline preload="metadata"
+          style={{ position:"absolute", inset:0, width:"100%", height:"100%",
+            objectFit:"cover",
+            transition:"opacity .3s",
+            opacity: hovered ? 0.8 : 1 }}
+        />
+      )}
+
+      {/* ── VIDEO: play button ── */}
       {isVideo && (
-        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,.35)" }}>
-          <div style={{ width:50, height:50, borderRadius:"50%", background:"rgba(255,255,255,.18)",
-            border:"1.5px solid rgba(255,255,255,.4)", display:"flex", alignItems:"center", justifyContent:"center",
-            transition:"background .25s" }}>
-            <Play size={18} color="#fff" fill="#fff" />
+        <div style={{ position:"absolute", inset:0, display:"flex",
+          alignItems:"center", justifyContent:"center" }}>
+          <div style={{ width: big ? 60 : 50, height: big ? 60 : 50,
+            borderRadius:"50%",
+            background: hovered ? "rgba(245,124,0,0.92)" : "rgba(0,0,0,0.55)",
+            border:"2px solid rgba(255,255,255,0.4)",
+            display:"flex", alignItems:"center", justifyContent:"center",
+            transition:"background .25s, transform .25s",
+            transform: hovered ? "scale(1.1)" : "scale(1)" }}>
+            <Play size={big ? 24 : 19} color="#fff" fill="#fff" />
           </div>
         </div>
       )}
-      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,.78) 0%, rgba(0,0,0,.18) 50%, transparent 100%)", pointerEvents:"none" }} />
+
+      {/* ── VIDEO source badge ── */}
+      {isVideo && (
+        <div style={{ position:"absolute", top:9, left:9, zIndex:2,
+          background:"rgba(0,0,0,0.72)", borderRadius:3,
+          padding:"2px 7px", display:"flex", alignItems:"center", gap:3 }}>
+          <Play size={8} color="#fff" fill="#fff" />
+          <span style={{ fontFamily:"'DM Mono',monospace", fontSize:"0.38rem",
+            color:"#fff", letterSpacing:"0.1em", textTransform:"uppercase" }}>
+            {getYouTubeId(item?.url) ? "YouTube" : getVimeoId(item?.url) ? "Vimeo" : "Vidéo"}
+          </span>
+        </div>
+      )}
+
+      {/* ── Subtle dark vignette at bottom for text legibility ── */}
+      <div style={{ position:"absolute", inset:0, pointerEvents:"none",
+        background:"linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.1) 40%, transparent 70%)" }} />
+
+      {/* ── Category pill (top-right) ── */}
       {cat && (
-        <div style={{ position:"absolute", top:11, left:11 }}>
-          <span style={{ fontFamily:"'DM Mono',monospace", fontSize:"0.42rem", letterSpacing:"0.2em",
-            textTransform:"uppercase", background:catColor, color:"#fff",
-            padding:"2px 8px", borderRadius:2 }}>
+        <div style={{ position:"absolute", top:10, right:10 }}>
+          <span style={{ fontFamily:"'DM Mono',monospace", fontSize:"0.4rem",
+            letterSpacing:"0.18em", textTransform:"uppercase",
+            background:catColor, color:"#fff",
+            padding:"2px 7px", borderRadius:2, display:"inline-block" }}>
             {cat}
           </span>
         </div>
       )}
+
+      {/* ── Caption ── */}
       {label && (
-        <div style={{ position:"absolute", bottom:0, left:0, right:0, padding: big ? "1.5rem 1.25rem" : "0.85rem 1rem" }}>
-          <p style={{ fontFamily:"'Fraunces',serif", fontWeight:700, color:"#fff",
-            lineHeight:1.3, fontSize: big ? "1.2rem" : "0.82rem", margin:0 }}>
+        <div style={{ position:"absolute", bottom:0, left:0, right:0,
+          padding: big ? "1.25rem 1rem" : "0.75rem 0.875rem" }}>
+          <p style={{ fontFamily:"'Fraunces',serif", fontWeight:700,
+            color:"#fff", lineHeight:1.3, margin:0,
+            fontSize: big ? "1.1rem" : "0.8rem",
+            textShadow:"0 1px 4px rgba(0,0,0,0.6)" }}>
             {label}
           </p>
         </div>
@@ -377,6 +500,8 @@ function ImgCard({ item, big = false, style = {} }) {
 
 // ══════════════════════════════════════════════════════════════
 export default function Home() {
+  const windowWidth  = useWindowWidth();
+  const isMobile     = windowWidth < 720;
   const [gallery,   setGallery]   = useState([]);
   const [visitorCount, setVisitorCount] = useState(null);
 
@@ -531,10 +656,7 @@ export default function Home() {
           .g2{grid-template-columns:1fr !important;}
           .g3{grid-template-columns:repeat(2,1fr) !important;}
           .g4{grid-template-columns:repeat(2,1fr) !important;}
-          .feed-grid{grid-template-columns:1fr !important;grid-template-rows:auto !important;}
-          .feed-big{grid-row:auto !important; height:260px !important;}
-          .feed-img-top{height:180px !important;}
-          .feed-side{grid-template-columns:1fr 1fr !important; height:160px !important;}
+          /* feed: JS-controlled */
           .stats-g{grid-template-columns:repeat(2,1fr) !important;}
         }
         @media(max-width:640px){
@@ -552,11 +674,7 @@ export default function Home() {
           /* partner strip — tighter */
           .sec-pad{padding-left:1.25rem !important;padding-right:1.25rem !important;}
 
-          /* feed grid — single column on mobile */
-          .feed-grid{grid-template-columns:1fr !important;grid-template-rows:auto !important;}
-          .feed-big{grid-row:auto !important; height:220px !important;}
-          .feed-img-top{height:160px !important;}
-          .feed-side{grid-template-columns:1fr 1fr !important; height:150px !important;}
+          /* feed: JS-controlled */
 
           /* section headers */
           .sec-hdr-mob{padding:0.875rem 1.25rem !important; flex-wrap:wrap !important;}
@@ -592,9 +710,6 @@ export default function Home() {
         @media(max-width:400px){
           .g4{grid-template-columns:1fr !important;}
           .stats-g{grid-template-columns:1fr 1fr !important;}
-          .feed-big{height:190px !important;}
-          .feed-side{height:130px !important;}
-          .feed-img-top{height:130px !important;}
         }
       `}</style>
 
@@ -819,36 +934,45 @@ export default function Home() {
           </div>
         </Reveal>
 
-        {/* main 2-col grid */}
-        {/* Desktop: 2-col grid. Mobile: stacked via CSS classes */}
-        <div ref={feedStagger} className="feed-grid"
-          style={{ display:"grid", gridTemplateColumns:"1.5fr 1fr",
-            gridTemplateRows:"240px 240px", gap:10, marginBottom:10 }}>
-
-          {/* BIG card — spans 2 rows on desktop, auto height on mobile */}
-          <ImgCard item={feed[0]} big
-            style={{ gridRow:"1 / 3" }}
-            className="feed-big" />
-
-          {/* top-right: small image */}
-          <ImgCard item={feed[1]}
-            style={{ borderRadius:10 }}
-            className="feed-img-top" />
-
-          {/* bottom-right: announcements + partners side by side */}
-          <div className="feed-side"
-            style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-            <AnnouncementsCard anns={anns} />
-            <PartnersCarouselCard />
+        {/* ── FEED GRID ── 4 blocks on both desktop and mobile ── */}
+        {isMobile ? (
+          /* MOBILE: stacked, explicit heights, nothing hidden */
+          <div ref={feedStagger} style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            <ImgCard item={feed[0]} big style={{ height:240 }} />
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, height:155 }}>
+              <AnnouncementsCard anns={anns} />
+              <PartnersCarouselCard />
+            </div>
+            <ImgCard item={feed[1]} style={{ height:175 }} />
+            <ImgCard item={feed[2]} style={{ height:155 }} />
           </div>
-        </div>
+        ) : (
+          /* DESKTOP: classic 2-col grid, explicit row heights, gridRow span for big card */
+          <div ref={feedStagger}
+            style={{ display:"grid",
+              gridTemplateColumns:"1.5fr 1fr",
+              gridTemplateRows:"260px 200px",
+              gap:10 }}>
 
-        {/* wide strip — always visible */}
-        <Reveal delay={0.1}>
-          <ImgCard item={feed[2]}
-            style={{ height:140, borderRadius:10, display:"block" }} />
-        </Reveal>
-      </div>
+            {/* big card — left column, spans both rows */}
+            <ImgCard item={feed[0]} big
+              style={{ gridRow:"1 / 3", gridColumn:"1",
+                height:"100%", borderRadius:10 }} />
+
+            {/* top-right: image */}
+            <ImgCard item={feed[1]}
+              style={{ height:"100%", borderRadius:10 }} />
+
+            {/* bottom-right: announcements + partners */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr",
+              gap:10, height:"100%" }}>
+              <AnnouncementsCard anns={anns} />
+              <PartnersCarouselCard />
+            </div>
+          </div>
+        )}
+
+      </div>{/* end pad-mob feed section */}
 
       {/* ════════════════════════════
           5. FACULTY STRIP — "Ils Prendront Part"
@@ -935,7 +1059,7 @@ export default function Home() {
               </span>
               <span className="ff-m" style={{ fontSize:"0.46rem", textTransform:"uppercase",
                 letterSpacing:"0.16em", color:"#88887F" }}>
-                STUD 2026 — Section 01
+                {"STUD 2026 — Section 01"}
               </span>
             </div>
           </Reveal>
@@ -1050,7 +1174,7 @@ export default function Home() {
             {featuredEvents.map((ev,i) => {
               const isDark = i===0;
               return (
-                <div key={i} className={`prog-card ${isDark?"dark":"light"}`}
+                <div key={i} className={"prog-card " + (isDark ? "dark" : "light")}
                   style={{ padding:"2rem 2.25rem",
                     color: isDark?"rgba(255,255,255,.9)":"#0A0A0A",
                     borderLeft: i%3!==0?S.rule:"none",
@@ -1123,7 +1247,7 @@ export default function Home() {
                     ))}
                     {offer.visibility.length>3 && (
                       <div className="ff-m" style={{ fontSize:"0.48rem", color:"#88887F" }}>
-                        +{offer.visibility.length-3} avantages supplémentaires
+                        {"+" + (offer.visibility.length - 3) + " avantages supplémentaires"}
                       </div>
                     )}
                   </div>
@@ -1135,7 +1259,7 @@ export default function Home() {
                       transition:"background .18s,color .18s" }}
                     onMouseEnter={e=>{ e.currentTarget.style.background=offer.color; e.currentTarget.style.color="#fff"; }}
                     onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.color=offer.color; }}>
-                    En savoir plus →
+                    En savoir plus <ArrowRight size={11} />
                   </Link>
                 </div>
               </div>
@@ -1219,7 +1343,7 @@ export default function Home() {
                     padding:"0.7rem 1.5rem", fontSize:"0.54rem", letterSpacing:"0.14em",
                     textTransform:"uppercase", textDecoration:"none",
                     display:"inline-flex", alignItems:"center", gap:"0.4rem", borderRadius:3 }}>
-                  Découvrir l'Histoire →
+                  Découvrir l'Histoire <ArrowRight size={13} />
                 </Link>
               </div>
             </div>
@@ -1241,7 +1365,7 @@ export default function Home() {
                     fontSize:"0.54rem", letterSpacing:"0.14em", textTransform:"uppercase",
                     textDecoration:"none", display:"inline-flex", alignItems:"center",
                     gap:"0.4rem", borderRadius:3 }}>
-                  Voir les offres →
+                  Voir les offres <ArrowRight size={13} />
                 </Link>
               </div>
             </div>
