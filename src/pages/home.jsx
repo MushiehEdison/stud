@@ -1,24 +1,21 @@
 // ============================================================
-// home.jsx — Updated with PartnersMarquee + TestimonialsCarousel
-// ============================================================
-// CHANGES vs original:
-//   + Imported PartnersMarquee
-//   + Imported TestimonialsCarousel, FeedbackFAB from TestimonialsWidget
-//   + Added <PartnersMarquee /> between Sponsoring and bottom CTA
-//   + Added <TestimonialsCarousel /> between PartnersMarquee and bottom CTA
-//   + Added <FeedbackFAB /> at the bottom of the render (fixed position)
+// home.jsx — v5
+// ✓ Partner logos full color (no grayscale)
+// ✓ Announcements moved below FacultyStrip ("Ils Prendront Part")
+// ✓ Rich scroll animations — staggered fade-up, slide-in, scale
+// ✓ Partners carousel full color
 // ============================================================
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Play, Pin, Images, Megaphone, Star } from "lucide-react";
+import { ArrowRight, Play, Pin, ChevronLeft, ChevronRight, Megaphone } from "lucide-react";
 import { META, STATS, OBJECTIVES, SPONSORING, PROGRAM } from "../data";
-import logo from "../assets/logo.png";
-import uniLogo from "../assets/University_of_Douala_Logo.jpg";
-import uniImg from "../assets/uni.JPG";
+import logo      from "../assets/logo.png";
+import uniLogo   from "../assets/University_of_Douala_Logo.jpg";
+import uniImg    from "../assets/uni.JPG";
 import Countdown from "../components/countdown";
 import { supabase } from "../lib/superbase";
-import PartnersMarquee from "../components/Partnersmarquee";
+import { useVisitorTracker, fetchTotalVisitors } from "../lib/useVisitorTracker";
 import { TestimonialsCarousel, FeedbackFAB } from "../components/TestimonialsWidget";
 import FacultyStrip from "../components/FacultyStrip";
 import illuCohesion    from "../assets/icon-cohesion.svg";
@@ -26,926 +23,1039 @@ import illuExcellence  from "../assets/icon-trophy.svg";
 import illuCelebration from "../assets/icon-celebration.svg";
 import illuSolidarity  from "../assets/icon-solidarity.svg";
 
+import logoPad     from "../assets/pad.png";
+import logoTradex  from "../assets/tradex.png";
+import logoTotal   from "../assets/total.png";
+import logoBossion from "../assets/bdc.webp";
+import logoOrange  from "../assets/orange.webp";
+
 const OBJ_ILLUSTRATIONS = [illuCohesion, illuExcellence, illuCelebration, illuSolidarity];
 
-function useInView(t = 0.1) {
+const PARTNERS = [
+  { name: "Port Autonome de Douala", short: "PAD",    logo: logoPad     },
+  { name: "Tradex",                  short: "TRADEX", logo: logoTradex  },
+  { name: "Total Energies",          short: "TOTAL",  logo: logoTotal   },
+  { name: "Brasseries du Cameroun",  short: "BDC",    logo: logoBossion },
+  { name: "Orange Cameroun",         short: "ORANGE", logo: logoOrange  },
+];
+
+const CAT_COLORS = { Général:"#1565C0", Sport:"#F57C00", Culture:"#F9A825", Logistique:"#6B7280" };
+
+const FEED_PLACEHOLDERS = [
+  { _label:"Sports & Tournois",       _cat:"Sport",   _bg:"linear-gradient(150deg,#0f2447 0%,#1e4d8c 100%)" },
+  { _label:"Culture & Arts",          _cat:"Culture", _bg:"linear-gradient(150deg,#3d1200 0%,#b84500 100%)" },
+  { _label:"Cohésion d'Équipe",       _cat:"Général", _bg:"linear-gradient(150deg,#0a2e1a 0%,#1a7a40 100%)" },
+  { _label:"Cérémonie de Clôture",    _cat:"Général", _bg:"linear-gradient(150deg,#1a0a2e 0%,#5a1f8c 100%)" },
+];
+
+// ─────────────────────────────────────────────────────────────
+// useInView — fires once when element enters viewport
+// ─────────────────────────────────────────────────────────────
+function useInView(threshold = 0.1) {
   const ref = useRef(null);
-  const [v, setV] = useState(false);
+  const [visible, setVisible] = useState(false);
   useEffect(() => {
-    const o = new IntersectionObserver(([e]) => { if (e.isIntersecting) setV(true); }, { threshold: t });
-    if (ref.current) o.observe(ref.current);
-    return () => o.disconnect();
-  }, [t]);
-  return [ref, v];
+    const el = ref.current; if (!el) return;
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setVisible(true); obs.disconnect(); }
+    }, { threshold });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [threshold]);
+  return [ref, visible];
 }
 
+// ─────────────────────────────────────────────────────────────
+// useStagger — animate children one by one on scroll
+// Returns a ref to attach to the parent container
+// ─────────────────────────────────────────────────────────────
+function useStagger(threshold = 0.07) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const container = ref.current; if (!container) return;
+    const children = Array.from(container.children);
+    children.forEach((child, i) => {
+      child.style.opacity = "0";
+      child.style.transform = "translateY(22px)";
+      child.style.transition = `opacity .55s ease ${i * 0.1}s, transform .55s ease ${i * 0.1}s`;
+    });
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
+        children.forEach(child => {
+          child.style.opacity = "1";
+          child.style.transform = "none";
+        });
+        obs.disconnect();
+      }
+    }, { threshold });
+    obs.observe(container);
+    return () => obs.disconnect();
+  }, [threshold]);
+  return ref;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Reveal — wraps any block with a scroll-triggered fade-up
+// ─────────────────────────────────────────────────────────────
+function Reveal({ children, delay = 0, from = "bottom", style = {}, className = "" }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const startTransform =
+      from === "left"  ? "translateX(-28px)" :
+      from === "right" ? "translateX(28px)"  :
+      from === "scale" ? "scale(.96)"        :
+      "translateY(22px)";
+    el.style.opacity = "0";
+    el.style.transform = startTransform;
+    el.style.transition = `opacity .6s ease ${delay}s, transform .65s cubic-bezier(.22,1,.36,1) ${delay}s`;
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
+        el.style.opacity = "1";
+        el.style.transform = from === "scale" ? "scale(1)" : "none";
+        obs.disconnect();
+      }
+    }, { threshold: 0.07 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [delay, from]);
+  return <div ref={ref} style={style} className={className}>{children}</div>;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Counter
+// ─────────────────────────────────────────────────────────────
 function Counter({ target }) {
   const [n, setN] = useState(0);
   const [ref, v] = useInView(0.3);
   useEffect(() => {
     if (!v) return;
-    let cur = 0;
-    const dur = 1800, step = 16;
-    const inc = target / (dur / step);
+    let cur = 0; const inc = target / (1800 / 16);
     const t = setInterval(() => {
       cur += inc;
       if (cur >= target) { setN(target); clearInterval(t); }
       else setN(Math.floor(cur));
-    }, step);
+    }, 16);
     return () => clearInterval(t);
   }, [v, target]);
   return <span ref={ref}>{n.toLocaleString("fr-FR")}</span>;
 }
 
-const CAT_COLORS = { Général: "#1565C0", Sport: "#F57C00", Culture: "#F9A825", Logistique: "#6B7280" };
+// ─────────────────────────────────────────────────────────────
+// PartnersCarouselCard — full color logos, auto-cycle
+// ─────────────────────────────────────────────────────────────
+function PartnersCarouselCard() {
+  const [idx, setIdx] = useState(0);
+  const [fading, setFading] = useState(false);
 
-const CSS = `
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --blue: #1565C0;
-    --blue-dark: #0D47A1;
-    --blue-light: #EEF4FF;
-    --orange: #F57C00;
-    --ink: #0A0A0A;
-    --ink-soft: #3D3D38;
-    --muted: #88887F;
-    --rule: rgba(10,10,10,0.12);
-    --cream: #FAFAF8;
-    --warm: #F5F0E8;
-  }
-
-  .home-root {
-    background: var(--cream);
-    padding-top: 64px;
-    overflow-x: hidden;
-    width: 100%;
-    font-size: 16px;
-  }
-
-  /* ── TICKER ── */
-  .ticker-wrap {
-    background: var(--ink);
-    padding: 0.55rem 0;
-    overflow: hidden;
-    border-bottom: none;
-  }
-  .ticker-inner {
-    display: flex;
-    gap: 5rem;
-    animation: ticker 28s linear infinite;
-    white-space: nowrap;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.6rem;
-    letter-spacing: 0.18em;
-    color: rgba(255,255,255,0.5);
-    text-transform: uppercase;
-  }
-  .ticker-inner span { color: var(--orange); }
-  @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-
-  /* ── HERO ── */
-  .hero-section {
-    border-bottom: 1px solid var(--rule);
-    position: relative;
-    overflow: hidden;
-  }
-  .hero-section::before {
-    content: '';
-    position: absolute;
-    top: -180px; right: -120px;
-    width: 600px; height: 600px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(21,101,192,0.07) 0%, transparent 70%);
-    pointer-events: none;
-  }
-  .hero-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    max-width: 1280px;
-    margin: 0 auto;
-  }
-  .hero-l {
-    padding: 5rem 3.5rem 4rem;
-    border-right: 1px solid var(--rule);
-    display: flex; flex-direction: column;
-    justify-content: space-between; gap: 3rem;
-  }
-  .hero-r {
-    display: flex; flex-direction: column;
-  }
-  .hero-badge {
-    display: inline-flex; align-items: center; gap: 0.5rem;
-    background: var(--ink); color: rgba(255,255,255,0.85);
-    padding: 0.35rem 0.9rem;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.58rem; letter-spacing: 0.2em; text-transform: uppercase;
-    margin-bottom: 2.5rem;
-  }
-  .hero-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--orange); display: inline-block; animation: pulse 2s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-  .hero-h1 {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(4.2rem, 9vw, 9.5rem);
-    line-height: 0.87;
-    letter-spacing: 0.015em;
-    color: var(--ink);
-  }
-  .hero-h1 em { font-style: normal; color: var(--blue); }
-  .hero-h1 strong { font-weight: inherit; color: var(--orange); }
-  .hero-theme {
-    font-family: 'Fraunces', serif;
-    font-style: italic;
-    font-size: 0.95rem;
-    color: var(--muted);
-    line-height: 1.8;
-    max-width: 380px;
-    border-left: 2px solid var(--orange);
-    padding-left: 1rem;
-  }
-  .hero-cta { display: flex; gap: 0.875rem; flex-wrap: wrap; }
-
-  .hero-r-top {
-    padding: 2.5rem 2.5rem 2rem;
-    border-bottom: 1px solid var(--rule);
-    display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;
-  }
-  .hero-divider { width: 1px; height: 48px; background: var(--rule); }
-  .cd-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.52rem; letter-spacing: 0.2em;
-    color: var(--muted); text-transform: uppercase; margin-bottom: 5px;
-  }
-
-  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; flex: 1; }
-  .stat-cell {
-    padding: 1.875rem 2.5rem;
-    border-top: 1px solid var(--rule);
-    position: relative; overflow: hidden;
-  }
-  .stat-cell:nth-child(odd) { border-right: 1px solid var(--rule); }
-  .stat-cell::after {
-    content: '';
-    position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
-    background: linear-gradient(90deg, transparent, var(--blue), transparent);
-    opacity: 0; transition: opacity 0.3s;
-  }
-  .stat-cell:hover::after { opacity: 1; }
-  .stat-num {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(2rem, 3.2vw, 3.5rem);
-    line-height: 1; letter-spacing: 0.02em;
-  }
-  .stat-lbl {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.54rem; letter-spacing: 0.16em;
-    color: var(--muted); text-transform: uppercase; margin-top: 4px;
-  }
-  .hero-patron {
-    padding: 1.25rem 2.5rem;
-    border-top: 1px solid var(--rule);
-    display: flex; align-items: center; gap: 1rem;
-    background: var(--warm);
-  }
-  .patron-name {
-    font-family: 'Fraunces', serif;
-    font-weight: 700; font-size: 0.8rem; color: var(--ink);
-  }
-  .patron-role {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.52rem; letter-spacing: 0.12em;
-    color: var(--muted); text-transform: uppercase; margin-top: 2px;
-  }
-
-  /* ── SECTION HEADER ── */
-  .sec-hdr {
-    max-width: 1280px; margin: 0 auto;
-    padding: 1.5rem 2.5rem;
-    border-bottom: 1px solid var(--rule);
-    display: flex; justify-content: space-between; align-items: center;
-    flex-wrap: wrap; gap: 0.75rem;
-  }
-  .sec-hdr-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.75rem; letter-spacing: 0.06em;
-    display: flex; align-items: center; gap: 0.6rem;
-  }
-  .sec-link {
-    text-decoration: none;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase;
-    color: var(--blue); display: flex; align-items: center; gap: 0.35rem;
-    padding: 0.4rem 0.8rem; border: 1px solid var(--blue);
-    transition: all 0.2s;
-  }
-  .sec-link:hover { background: var(--blue); color: #fff; }
-
-  /* ── UNIVERSITY ── */
-  .uni-section { border-bottom: 1px solid var(--rule); }
-  .uni-grid {
-    display: grid; grid-template-columns: 1fr 1fr;
-    max-width: 1280px; margin: 0 auto;
-  }
-  .uni-img-wrap {
-    position: relative; overflow: hidden; min-height: 480px;
-  }
-  .uni-img-wrap img {
-    width: 100%; height: 100%; object-fit: cover; display: block;
-    transition: transform 1.4s ease;
-  }
-  .uni-img-wrap:hover img { transform: scale(1.04); }
-  .uni-img-overlay {
-    position: absolute; inset: 0;
-    background: linear-gradient(160deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.1) 50%, transparent 100%);
-  }
-  .uni-img-caption {
-    position: absolute; bottom: 0; left: 0; right: 0; padding: 2.5rem 2.5rem 2rem;
-  }
-  .uni-img-city {
-    font-family: 'DM Mono', monospace; font-size: 0.54rem;
-    letter-spacing: 0.2em; color: rgba(255,255,255,0.45);
-    text-transform: uppercase; margin-bottom: 8px;
-  }
-  .uni-img-name {
-    font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem;
-    color: #fff; letter-spacing: 0.04em; line-height: 1;
-  }
-  .uni-r {
-    padding: 4rem 3.5rem;
-    display: flex; flex-direction: column; justify-content: center;
-    background: var(--cream);
-  }
-  .uni-top {
-    display: flex; align-items: center; gap: 1.25rem;
-    margin-bottom: 2.5rem; flex-wrap: wrap;
-  }
-  .uni-meta {
-    font-family: 'DM Mono', monospace; font-size: 0.56rem;
-    letter-spacing: 0.14em; color: var(--muted); text-transform: uppercase;
-    line-height: 1.8;
-  }
-  .uni-h2 {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(2rem, 4vw, 3.8rem);
-    line-height: 0.95; letter-spacing: 0.02em; margin-bottom: 1.25rem;
-  }
-  .uni-desc {
-    font-family: 'Fraunces', serif; font-style: italic;
-    font-size: 0.95rem; color: var(--ink-soft); line-height: 1.9;
-    max-width: 420px; margin-bottom: 2.5rem;
-  }
-
-  /* ── GALLERY ── */
-  .gallery-section { border-bottom: 1px solid var(--rule); }
-  .gallery-grid {
-    display: grid; grid-template-columns: repeat(4, 1fr);
-    max-width: 1280px; margin: 0 auto;
-  }
-  .gal-item {
-    text-decoration: none; display: block;
-    overflow: hidden; position: relative;
-    aspect-ratio: 1;
-  }
-  .gal-item + .gal-item { border-left: 1px solid var(--rule); }
-  .gal-item img {
-    width: 100%; height: 100%; object-fit: cover;
-    transition: transform 0.5s cubic-bezier(0.25,0.46,0.45,0.94);
-    display: block;
-  }
-  .gal-item:hover img { transform: scale(1.08); }
-  .gal-overlay {
-    position: absolute; inset: 0;
-    background: linear-gradient(transparent 45%, rgba(0,0,0,0.7));
-    opacity: 0; transition: opacity 0.35s;
-  }
-  .gal-item:hover .gal-overlay { opacity: 1; }
-  .gal-cap {
-    position: absolute; bottom: 0; left: 0; right: 0;
-    padding: 1rem 1.25rem;
-    font-family: 'Fraunces', serif; font-style: italic;
-    font-size: 0.78rem; color: #fff;
-    transform: translateY(8px); opacity: 0;
-    transition: all 0.35s;
-  }
-  .gal-item:hover .gal-cap { transform: translateY(0); opacity: 1; }
-  .gallery-empty {
-    grid-column: 1 / -1; padding: 6rem 2rem; text-align: center;
-  }
-
-  /* ── ANNOUNCEMENTS ── */
-  .ann-section { border-bottom: 1px solid var(--rule); }
-  .ann-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr);
-    max-width: 1280px; margin: 0 auto;
-  }
-  .ann-item {
-    text-decoration: none; display: flex; flex-direction: column;
-    transition: background 0.2s;
-  }
-  .ann-item + .ann-item { border-left: 1px solid var(--rule); }
-  .ann-item:hover { background: var(--blue-light); }
-  .ann-bar { height: 3px; }
-  .ann-body { padding: 2rem 2.5rem; flex: 1; display: flex; flex-direction: column; gap: 0.75rem; }
-  .ann-meta { display: flex; align-items: center; gap: 0.5rem; }
-  .ann-cat {
-    font-family: 'DM Mono', monospace; font-size: 0.52rem;
-    letter-spacing: 0.14em; text-transform: uppercase;
-  }
-  .ann-time {
-    font-family: 'DM Mono', monospace; font-size: 0.5rem;
-    color: var(--muted); margin-left: auto;
-  }
-  .ann-title {
-    font-family: 'Fraunces', serif; font-weight: 700;
-    font-size: 1rem; line-height: 1.4; color: var(--ink);
-  }
-  .ann-excerpt {
-    font-family: 'Fraunces', serif; font-style: italic;
-    font-size: 0.83rem; color: var(--ink-soft); line-height: 1.7;
-    flex: 1;
-  }
-  .ann-author {
-    font-family: 'DM Mono', monospace; font-size: 0.52rem;
-    color: var(--muted); padding-top: 0.5rem;
-    border-top: 1px solid var(--rule);
-  }
-
-  /* ── OBJECTIVES ── */
-  .obj-section { border-bottom: 1px solid var(--rule); }
-  .obj-grid {
-    display: grid; grid-template-columns: repeat(4, 1fr);
-    max-width: 1280px; margin: 0 auto;
-  }
-  .obj-item {
-    padding: 3rem 2.25rem;
-    display: flex; flex-direction: column;
-    transition: background 0.25s;
-    position: relative; overflow: hidden;
-  }
-  .obj-item + .obj-item { border-left: 1px solid var(--rule); }
-  .obj-item:hover { background: var(--warm); }
-  .obj-num {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 5rem; line-height: 1;
-    margin-bottom: 1.5rem; letter-spacing: 0.02em;
-    transition: transform 0.3s;
-  }
-  .obj-item:hover .obj-num { transform: translateX(4px); }
-  .obj-illus {
-    width: 100%; aspect-ratio: 4/3; margin-bottom: 1.75rem;
-    display: flex; align-items: center; justify-content: center;
-    overflow: hidden; border-radius: 2px;
-  }
-  .obj-illus img { width: 82%; height: 82%; object-fit: contain; }
-  .obj-title {
-    font-family: 'Fraunces', serif; font-weight: 700;
-    font-size: 1rem; line-height: 1.3; margin-bottom: 0.65rem;
-  }
-  .obj-desc {
-    font-family: 'Fraunces', serif; font-style: italic;
-    font-size: 0.82rem; color: var(--ink-soft); line-height: 1.75;
-  }
-
-  /* ── PROGRAMME ── */
-  .prog-section { border-bottom: 1px solid var(--rule); }
-  .prog-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr);
-    max-width: 1280px; margin: 0 auto;
-  }
-  .prog-item {
-    padding: 2.25rem 2.5rem;
-    transition: background 0.2s;
-  }
-  .prog-item:hover { background: var(--warm); }
-  .prog-item--dark { background: var(--ink) !important; }
-  .prog-item--dark:hover { background: #1a1a16 !important; }
-  .prog-item + .prog-item { border-left: 1px solid var(--rule); }
-  .prog-row-b { border-bottom: 1px solid var(--rule); }
-  .prog-date {
-    font-family: 'DM Mono', monospace; font-size: 0.56rem;
-    letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 1rem;
-  }
-  .prog-img { width: 100%; height: 72px; margin-bottom: 0.875rem; display: flex; align-items: center; }
-  .prog-img img { height: 100%; width: auto; max-width: 55%; object-fit: contain; }
-  .prog-name {
-    font-family: 'Fraunces', serif; font-weight: 700;
-    font-size: 1.05rem; line-height: 1.35; margin-bottom: 0.5rem;
-  }
-  .prog-desc {
-    font-family: 'Fraunces', serif; font-style: italic;
-    font-size: 0.82rem; line-height: 1.7;
-  }
-
-  /* ── SPONSORING ── */
-  .sp-section { border-bottom: 1px solid var(--rule); }
-  .sp-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr);
-    max-width: 1280px; margin: 0 auto;
-  }
-  .sp-item + .sp-item { border-left: 1px solid var(--rule); }
-  .sp-top-bar { height: 4px; }
-  .sp-inner { padding: 2.75rem 2.5rem; }
-  .sp-tier {
-    font-family: 'DM Mono', monospace; font-size: 0.56rem;
-    letter-spacing: 0.2em; margin-bottom: 0.4rem; text-transform: uppercase;
-  }
-  .sp-price {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(2.2rem, 3.5vw, 3.5rem);
-    line-height: 1; letter-spacing: 0.02em; margin-bottom: 0.2rem;
-  }
-  .sp-currency {
-    font-family: 'DM Mono', monospace; font-size: 0.58rem;
-    color: var(--muted); letter-spacing: 0.1em; margin-bottom: 2rem;
-  }
-  .sp-features { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 2rem; }
-  .sp-feature {
-    display: flex; gap: 0.65rem;
-    font-family: 'Fraunces', serif; font-size: 0.84rem;
-    color: var(--ink-soft); line-height: 1.4;
-  }
-  .sp-more {
-    font-family: 'DM Mono', monospace; font-size: 0.56rem;
-    color: var(--muted);
-  }
-  .sp-cta {
-    display: block; text-align: center; text-decoration: none;
-    padding: 0.85rem 1.5rem;
-    font-family: 'DM Mono', monospace; font-size: 0.64rem;
-    letter-spacing: 0.14em; text-transform: uppercase;
-    border: 1.5px solid; transition: all 0.2s;
-  }
-
-  /* ── CTA ── */
-  .cta-section { }
-  .cta-grid {
-    display: grid; grid-template-columns: 1fr 1fr;
-    max-width: 1280px; margin: 0 auto;
-    min-height: 300px;
-  }
-  .cta-l, .cta-r {
-    padding: 4.5rem 3.5rem;
-    display: flex; flex-direction: column; justify-content: space-between;
-  }
-  .cta-l { border-right: 1px solid var(--rule); }
-  .cta-r { background: var(--ink); }
-  .cta-label {
-    font-family: 'DM Mono', monospace; font-size: 0.54rem;
-    letter-spacing: 0.22em; text-transform: uppercase;
-  }
-  .cta-h2 {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(2.5rem, 5vw, 5.5rem);
-    line-height: 0.92; letter-spacing: 0.02em; margin-bottom: 2rem;
-  }
-
-  /* ── BUTTONS ── */
-  .btn-primary {
-    display: inline-flex; align-items: center; gap: 0.5rem;
-    text-decoration: none; background: var(--blue); color: #FAFAF8;
-    padding: 0.9rem 2.25rem;
-    font-family: 'DM Mono', monospace; font-size: 0.64rem;
-    letter-spacing: 0.14em; text-transform: uppercase;
-    transition: background 0.2s, transform 0.2s;
-    border: none; cursor: pointer;
-  }
-  .btn-primary:hover { background: var(--blue-dark); transform: translateX(2px); }
-  .btn-outline {
-    display: inline-flex; align-items: center; gap: 0.5rem;
-    text-decoration: none; background: transparent; color: var(--ink);
-    padding: 0.9rem 2.25rem;
-    font-family: 'DM Mono', monospace; font-size: 0.64rem;
-    letter-spacing: 0.14em; text-transform: uppercase;
-    border: 1.5px solid var(--ink); transition: all 0.2s;
-  }
-  .btn-outline:hover { background: var(--ink); color: var(--cream); }
-  .btn-outline--white {
-    border-color: rgba(255,255,255,0.4); color: rgba(255,255,255,0.85);
-  }
-  .btn-outline--white:hover { background: rgba(255,255,255,0.1); border-color: #fff; color: #fff; }
-
-  .v-divider { width: 1px; height: 44px; background: var(--rule); }
-
-  /* ── RESPONSIVE ── */
-  @media (max-width: 1024px) {
-    .hero-l { padding: 3.5rem 2.5rem 3rem; }
-    .uni-r { padding: 3rem 2.5rem; }
-    .uni-img-wrap { min-height: 380px; }
-    .obj-grid { grid-template-columns: repeat(2, 1fr); }
-    .obj-item + .obj-item { border-left: none; }
-    .obj-item:nth-child(odd) { border-right: 1px solid var(--rule) !important; }
-    .obj-item:nth-child(1), .obj-item:nth-child(2) { border-bottom: 1px solid var(--rule); }
-    .gallery-grid { grid-template-columns: repeat(2, 1fr); }
-    .gal-item + .gal-item { border-left: none; }
-    .gal-item:nth-child(even) { border-left: 1px solid var(--rule); }
-    .gal-item:nth-child(1), .gal-item:nth-child(2) { border-bottom: 1px solid var(--rule); }
-    .prog-grid { grid-template-columns: repeat(2, 1fr); }
-    .prog-item + .prog-item { border-left: 1px solid var(--rule); }
-    .prog-item:nth-child(even) { border-left: 1px solid var(--rule); }
-    .prog-item:nth-child(2n+1) { border-left: none; }
-    .sp-inner { padding: 2.25rem 2rem; }
-  }
-
-  @media (max-width: 768px) {
-    .hero-grid { grid-template-columns: 1fr; }
-    .hero-l { border-right: none; border-bottom: 1px solid var(--rule); padding: 2.75rem 1.5rem 2.5rem; gap: 2.25rem; }
-    .hero-r-top { padding: 2rem 1.5rem; }
-    .stat-cell { padding: 1.5rem 1.5rem; }
-    .hero-patron { padding: 1rem 1.5rem; }
-    .uni-grid { grid-template-columns: 1fr; }
-    .uni-img-wrap { min-height: 280px; }
-    .uni-r { padding: 2.5rem 1.5rem; }
-    .uni-top .v-divider { display: none; }
-    .ann-grid { grid-template-columns: 1fr; }
-    .ann-item + .ann-item { border-left: none; border-top: 1px solid var(--rule); }
-    .ann-body { padding: 1.75rem 1.5rem; }
-    .obj-grid { grid-template-columns: 1fr; }
-    .obj-item + .obj-item { border-left: none !important; border-right: none !important; border-top: 1px solid var(--rule); }
-    .obj-item:nth-child(1), .obj-item:nth-child(2) { border-bottom: none; }
-    .obj-item { padding: 2.25rem 1.5rem; }
-    .prog-grid { grid-template-columns: 1fr; }
-    .prog-item + .prog-item { border-left: none; border-top: 1px solid var(--rule); }
-    .prog-item { padding: 2rem 1.5rem; }
-    .prog-row-b { border-bottom: none; }
-    .sp-grid { grid-template-columns: 1fr; }
-    .sp-item + .sp-item { border-left: none; border-top: 1px solid var(--rule); }
-    .sp-inner { padding: 2rem 1.5rem; }
-    .gallery-grid { grid-template-columns: repeat(2, 1fr); }
-    .gal-item + .gal-item { border-left: none; }
-    .gal-item:nth-child(even) { border-left: 1px solid var(--rule) !important; }
-    .cta-grid { grid-template-columns: 1fr; min-height: auto; }
-    .cta-l { border-right: none; border-bottom: 1px solid var(--rule); padding: 3rem 1.5rem; }
-    .cta-r { padding: 3rem 1.5rem; }
-    .sec-hdr { padding: 1.25rem 1.5rem; flex-direction: column; align-items: flex-start; }
-    .hide-mob { display: none !important; }
-    .hero-h1 { font-size: clamp(3.5rem, 16vw, 6rem); }
-  }
-
-  @media (max-width: 400px) {
-    .hero-l { padding: 2.25rem 1.125rem 2rem; }
-    .gallery-grid { grid-template-columns: 1fr; }
-    .gal-item + .gal-item { border-left: none !important; border-top: 1px solid var(--rule); }
-    .stats-grid { grid-template-columns: 1fr; }
-    .stat-cell:nth-child(odd) { border-right: none; border-bottom: 1px solid var(--rule); }
-  }
-`;
-
-export default function Home() {
-  const [loaded, setLoaded] = useState(false);
-  const [objRef, objV] = useInView();
-  const [spRef, spV] = useInView();
-  const [pgRef, pgV] = useInView();
-  const [uniRef, uniV] = useInView();
-  const [mediaRef, mediaV] = useInView();
-  const [galleryItems, setGalleryItems] = useState([]);
-  const [announcements, setAnnouncements] = useState([]);
-
-  useEffect(() => {
-    const fetchHome = async () => {
-      const [{ data: gallery }, { data: anns }] = await Promise.all([
-        supabase.from("gallery").select("id, url, caption, type, category").order("created_at", { ascending: false }).limit(4),
-        supabase.from("announcements").select("id, title, body, author, category, pinned, created_at").order("pinned", { ascending: false }).order("created_at", { ascending: false }).limit(3),
-      ]);
-      if (gallery) setGalleryItems(gallery);
-      if (anns) setAnnouncements(anns);
-    };
-    fetchHome();
+  const goTo = useCallback((next) => {
+    setFading(true);
+    setTimeout(() => { setIdx(next); setFading(false); }, 300);
   }, []);
 
-  useEffect(() => { setTimeout(() => setLoaded(true), 80); }, []);
+  useEffect(() => {
+    const t = setInterval(() => goTo((idx + 1) % PARTNERS.length), 2600);
+    return () => clearInterval(t);
+  }, [idx, goTo]);
+
+  const p = PARTNERS[idx];
+
+  return (
+    <div style={{
+      position:"relative", background:"#fff",
+      borderRadius:10, overflow:"hidden",
+      display:"flex", flexDirection:"column",
+      alignItems:"center", justifyContent:"center",
+      padding:"1.5rem 1rem", gap:"0.9rem",
+      border:"1px solid rgba(10,10,10,.07)",
+      boxShadow:"0 1px 6px rgba(0,0,0,.04)",
+    }}>
+      {/* top label */}
+      <div style={{ position:"absolute", top:10, left:12, fontFamily:"'DM Mono',monospace",
+        fontSize:"0.4rem", letterSpacing:"0.22em", textTransform:"uppercase", color:"#aaa" }}>
+        Partenaires Officiels
+      </div>
+
+      {/* logo — full color */}
+      <div style={{ transition:"opacity .3s ease", opacity: fading ? 0 : 1,
+        display:"flex", alignItems:"center", justifyContent:"center", height:64 }}>
+        <img src={p.logo} alt={p.name}
+          style={{ maxHeight:64, maxWidth:140, objectFit:"contain" }}
+          onError={e => {
+            e.target.style.display = "none";
+            e.target.nextSibling.style.display = "flex";
+          }}
+        />
+        <div style={{ display:"none", fontFamily:"'Bebas Neue',sans-serif",
+          fontSize:"1.6rem", color:"#1565C0", letterSpacing:"0.06em" }}>
+          {p.short}
+        </div>
+      </div>
+
+      {/* name */}
+      <div style={{ transition:"opacity .3s ease", opacity: fading ? 0 : 1,
+        fontFamily:"'DM Mono',monospace", fontSize:"0.46rem", letterSpacing:"0.12em",
+        color:"#88887F", textAlign:"center", textTransform:"uppercase" }}>
+        {p.name}
+      </div>
+
+      {/* dots */}
+      <div style={{ display:"flex", gap:5, alignItems:"center" }}>
+        {PARTNERS.map((_,i) => (
+          <button key={i} onClick={() => goTo(i)}
+            style={{ width: i===idx?16:5, height:5, borderRadius:3, border:"none", cursor:"pointer", padding:0,
+              background: i===idx?"#1565C0":"#e0e0e0",
+              transition:"width .3s ease, background .3s ease" }} />
+        ))}
+      </div>
+
+      {/* arrows */}
+      <button onClick={() => goTo((idx-1+PARTNERS.length)%PARTNERS.length)}
+        style={{ position:"absolute", left:6, top:"50%", transform:"translateY(-50%)",
+          background:"rgba(0,0,0,.04)", border:"none", borderRadius:4, padding:"3px 5px",
+          cursor:"pointer", color:"#aaa", display:"flex", alignItems:"center", lineHeight:1 }}>
+        <ChevronLeft size={13} />
+      </button>
+      <button onClick={() => goTo((idx+1)%PARTNERS.length)}
+        style={{ position:"absolute", right:6, top:"50%", transform:"translateY(-50%)",
+          background:"rgba(0,0,0,.04)", border:"none", borderRadius:4, padding:"3px 5px",
+          cursor:"pointer", color:"#aaa", display:"flex", alignItems:"center", lineHeight:1 }}>
+        <ChevronRight size={13} />
+      </button>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// ImgCard — full-bleed image, title overlay
+// ─────────────────────────────────────────────────────────────
+function ImgCard({ item, big = false, style = {} }) {
+  const isVideo = item?.type === "video";
+  const label   = item?.caption || item?._label || "";
+  const cat     = item?.category || item?._cat   || "";
+  const bg      = item?._bg || "#1a2744";
+  const catColor = CAT_COLORS[cat] || "#1565C0";
+
+  return (
+    <Link to="/gallery" style={{ display:"block", position:"relative", overflow:"hidden",
+      background:bg, textDecoration:"none", borderRadius:10, ...style }}>
+      {item?.url && !isVideo && (
+        <img src={item.url} alt={label}
+          style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover",
+            transition:"transform .65s ease" }}
+          onMouseOver={e => e.currentTarget.style.transform = "scale(1.04)"}
+          onMouseOut={e => e.currentTarget.style.transform = "scale(1)"}
+        />
+      )}
+      {isVideo && (
+        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,.35)" }}>
+          <div style={{ width:50, height:50, borderRadius:"50%", background:"rgba(255,255,255,.18)",
+            border:"1.5px solid rgba(255,255,255,.4)", display:"flex", alignItems:"center", justifyContent:"center",
+            transition:"background .25s" }}>
+            <Play size={18} color="#fff" fill="#fff" />
+          </div>
+        </div>
+      )}
+      <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,.78) 0%, rgba(0,0,0,.18) 50%, transparent 100%)", pointerEvents:"none" }} />
+      {cat && (
+        <div style={{ position:"absolute", top:11, left:11 }}>
+          <span style={{ fontFamily:"'DM Mono',monospace", fontSize:"0.42rem", letterSpacing:"0.2em",
+            textTransform:"uppercase", background:catColor, color:"#fff",
+            padding:"2px 8px", borderRadius:2 }}>
+            {cat}
+          </span>
+        </div>
+      )}
+      {label && (
+        <div style={{ position:"absolute", bottom:0, left:0, right:0, padding: big ? "1.5rem 1.25rem" : "0.85rem 1rem" }}>
+          <p style={{ fontFamily:"'Fraunces',serif", fontWeight:700, color:"#fff",
+            lineHeight:1.3, fontSize: big ? "1.2rem" : "0.82rem", margin:0 }}>
+            {label}
+          </p>
+        </div>
+      )}
+    </Link>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+export default function Home() {
+  const [gallery,   setGallery]   = useState([]);
+  const [visitorCount, setVisitorCount] = useState(null);
+
+  // Track this visit (deduped per day)
+  useVisitorTracker();
+
+  // Fetch total unique visitors for counter
+  useEffect(() => {
+    fetchTotalVisitors().then(n => { if (n !== null) setVisitorCount(n); });
+  }, []);
+  const [anns,    setAnns]    = useState([]);
+
+  // stagger refs for grid sections
+  const statsStagger  = useStagger(0.1);
+  const objStagger    = useStagger(0.07);
+  const spStagger     = useStagger(0.07);
+  const pgStagger     = useStagger(0.07);
+  const feedStagger   = useStagger(0.05);
+  const annStagger    = useStagger(0.07);
+
+  useEffect(() => {
+    (async () => {
+      const [{ data: g }, { data: a }] = await Promise.all([
+        supabase.from("gallery").select("id,url,caption,type,category").order("created_at",{ascending:false}).limit(4),
+        supabase.from("announcements").select("id,title,body,author,category,pinned,created_at").order("pinned",{ascending:false}).order("created_at",{ascending:false}).limit(3),
+      ]);
+      if (g) setGallery(g);
+      if (a) setAnns(a);
+    })();
+  }, []);
+
+  const feed = [...gallery];
+  while (feed.length < 4) feed.push(FEED_PLACEHOLDERS[feed.length % FEED_PLACEHOLDERS.length]);
+
+  const timeAgo = (iso) => {
+    const d = Date.now() - new Date(iso).getTime(), m = Math.floor(d/60000);
+    if (m<1) return "À l'instant"; if (m<60) return `Il y a ${m}min`;
+    const h = Math.floor(m/60); if (h<24) return `Il y a ${h}h`;
+    return `Il y a ${Math.floor(h/24)}j`;
+  };
 
   const featuredEvents = [
     PROGRAM.sports[0], PROGRAM.cultural[7], PROGRAM.cultural[4],
     PROGRAM.intellectual[0], PROGRAM.sports[1], PROGRAM.cultural[5],
   ];
 
-  const timeAgo = (iso) => {
-    const diff = Date.now() - new Date(iso).getTime();
-    const m = Math.floor(diff / 60000);
-    if (m < 1) return "À l'instant";
-    if (m < 60) return `Il y a ${m}min`;
-    const h = Math.floor(m / 60);
-    if (h < 24) return `Il y a ${h}h`;
-    return `Il y a ${Math.floor(h / 24)}j`;
+  // ── inline style helpers ──
+  const S = {
+    page:     { background:"#f8f8f6", paddingTop:64, overflowX:"hidden" },
+    maxW:     { maxWidth:1280, margin:"0 auto" },
+    rule:     "1px solid rgba(10,10,10,.08)",
+    ruleHeavy:"2px solid #ede9e0",
+    secHdr:   { display:"flex", alignItems:"center", justifyContent:"space-between",
+                padding:"1rem 2.5rem", borderBottom:"1px solid rgba(10,10,10,.08)",
+                flexWrap:"wrap", gap:"0.5rem" },
   };
 
-  const fadeIn = (v, i = 0) => ({
-    opacity: v ? 1 : 0,
-    transform: v ? "none" : "translateY(18px)",
-    transition: `opacity 0.65s ease ${i * 0.1}s, transform 0.65s ease ${i * 0.1}s`,
-  });
-
   return (
-    <div className="home-root">
-      <style>{CSS}</style>
+    <div style={S.page}>
 
-      {/* ── TICKER ── */}
-      <div className="ticker-wrap">
-        <div className="ticker-inner">
-          {Array(8).fill(null).map((_, i) => (
-            <span key={i} style={{ display: "inline-flex", gap: "1rem", alignItems: "center" }}>
-              <span style={{ color: "rgba(255,255,255,0.5)" }}>STUD 2026</span>
-              <span style={{ color: "#F57C00" }}>★</span>
-              <span style={{ color: "rgba(255,255,255,0.5)" }}>24–30 AVRIL</span>
-              <span style={{ color: "#F57C00" }}>★</span>
-              <span style={{ color: "rgba(255,255,255,0.5)" }}>UNIVERSITÉ DE DOUALA</span>
-              <span style={{ color: "#F57C00" }}>★</span>
-              <span style={{ color: "rgba(255,255,255,0.5)" }}>PERSONNEL ENGAGÉ, UNIVERSITÉ D'EXCELLENCE</span>
-              <span style={{ color: "#F57C00", marginRight: "4rem" }}>★</span>
+      {/* ══════════ GLOBAL STYLES ══════════ */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Fraunces:ital,wght@0,700;1,400&family=DM+Mono:wght@400;500&display=swap');
+        *, *::before, *::after { box-sizing: border-box; }
+        :root {
+          --blue:#1565C0; --blue-dark:#0D47A1; --blue-light:#EEF4FF;
+          --orange:#F57C00; --ink:#0A0A0A; --ink-soft:#3D3D38;
+          --muted:#88887F; --rule:rgba(10,10,10,.08);
+          --cream:#f8f8f6; --warm:#F5F0E8;
+        }
+        .ff-b { font-family:'Bebas Neue',sans-serif; }
+        .ff-f { font-family:'Fraunces',serif; }
+        .ff-m { font-family:'DM Mono',monospace; }
+
+        /* ticker */
+        @keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+        .ticker-run { animation: ticker 32s linear infinite; }
+
+        /* page load animations */
+        @keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:none} }
+        .ld0{opacity:0;animation:fadeUp .6s ease .05s forwards}
+        .ld1{opacity:0;animation:fadeUp .6s ease .2s  forwards}
+        .ld2{opacity:0;animation:fadeUp .6s ease .35s forwards}
+        .ld3{opacity:0;animation:fadeUp .6s ease .5s  forwards}
+        .ld4{opacity:0;animation:fadeUp .6s ease .65s forwards}
+
+        /* live dot */
+        @keyframes livepulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.35;transform:scale(.75)} }
+        .live { animation: livepulse 1.8s infinite; display:inline-block; }
+
+        /* stat hover */
+        .stat-cell { position:relative; overflow:hidden; cursor:default; }
+        .stat-cell::after {
+          content:''; position:absolute; bottom:0; left:0; right:0; height:2px;
+          background:linear-gradient(90deg,transparent,#1565C0,transparent);
+          opacity:0; transition:opacity .3s;
+        }
+        .stat-cell:hover::after { opacity:1; }
+
+        /* obj */
+        .obj-card { transition:background .25s; }
+        .obj-card:hover { background:#F5F0E8 !important; }
+        .obj-num  { transition:transform .3s; }
+        .obj-card:hover .obj-num { transform:translateX(6px); }
+
+        /* prog */
+        .prog-card { transition:background .22s; }
+        .prog-card.light:hover { background:#F0ECE4 !important; }
+        .prog-card.dark { background:#0A0A0A !important; }
+        .prog-card.dark:hover { background:#111 !important; }
+
+        /* btn */
+        .btn-blue  { transition:background .2s,transform .2s; }
+        .btn-blue:hover  { background:#0D47A1 !important; transform:translateX(2px); }
+        .btn-ink   { transition:background .2s,color .2s; }
+        .btn-ink:hover   { background:#0A0A0A !important; color:#f8f8f6 !important; }
+        .btn-ghost { transition:background .2s,border-color .2s,color .2s; }
+        .btn-ghost:hover { background:rgba(255,255,255,.12) !important; border-color:#fff !important; color:#fff !important; }
+        .lnk { transition:background .18s,color .18s; }
+        .lnk:hover { background:#1565C0 !important; color:#fff !important; }
+
+        /* ann card */
+        .ann-card { transition:box-shadow .22s,transform .22s; }
+        .ann-card:hover { box-shadow:0 4px 20px rgba(0,0,0,.09); transform:translateY(-2px); }
+
+        /* uni image */
+        .uni-reveal { transition:opacity 1.4s ease, transform 1.4s ease; }
+
+        /* partner strip logo */
+        .p-logo { transition:transform .25s; }
+        .p-logo:hover { transform:scale(1.06); }
+
+        /* responsive */
+        @media(max-width:900px){
+          .g2{grid-template-columns:1fr !important;}
+          .g3{grid-template-columns:repeat(2,1fr) !important;}
+          .g4{grid-template-columns:repeat(2,1fr) !important;}
+          .feed-grid{grid-template-columns:1fr !important;grid-template-rows:auto !important;}
+          .feed-big{grid-row:auto !important;}
+          .stats-g{grid-template-columns:repeat(2,1fr) !important;}
+        }
+        @media(max-width:560px){
+          .g3{grid-template-columns:1fr !important;}
+          .g4{grid-template-columns:1fr !important;}
+          .hide-sm{display:none !important;}
+          .ibar{padding:1.25rem !important;}
+          .sec-pad{padding-left:1.25rem !important;padding-right:1.25rem !important;}
+        }
+      `}</style>
+
+      {/* ════════════════════════════
+          1. TICKER
+      ════════════════════════════ */}
+      <div style={{ background:"#0a0a0a", padding:"0.45rem 0", overflow:"hidden" }}>
+        <div className="ticker-run ff-m"
+          style={{ display:"flex", gap:"4rem", whiteSpace:"nowrap",
+            fontSize:"0.52rem", letterSpacing:"0.2em", textTransform:"uppercase",
+            color:"rgba(255,255,255,.35)" }}>
+          {Array(8).fill(null).map((_,i) => (
+            <span key={i} style={{ display:"inline-flex", alignItems:"center", gap:"1rem" }}>
+              <span>STUD 2026</span><span style={{color:"#F57C00"}}>★</span>
+              <span>24–30 AVRIL</span><span style={{color:"#F57C00"}}>★</span>
+              <span>UNIVERSITÉ DE DOUALA</span><span style={{color:"#F57C00"}}>★</span>
+              <span style={{marginRight:"3rem"}}>PERSONNEL ENGAGÉ, UNIVERSITÉ D'EXCELLENCE</span>
             </span>
           ))}
         </div>
       </div>
 
-      {/* ── HERO ── */}
-      <section className="hero-section">
-        <div className="hero-grid">
-          <div className="hero-l">
-            <div>
-              <div className="hero-badge" style={{ opacity: loaded ? 1 : 0, transform: loaded ? "none" : "translateY(10px)", transition: "all 0.5s ease 0.1s" }}>
-                <span className="hero-dot" />
-                Édition 2026
-              </div>
-              <h1 className="hero-h1" style={{ opacity: loaded ? 1 : 0, transform: loaded ? "none" : "translateY(30px)", transition: "all 0.75s ease 0.2s" }}>
-                SE<em>MA</em>INE<br />
-                DU TRA<strong>VAI</strong>LLEUR
-              </h1>
-            </div>
-            <div style={{ opacity: loaded ? 1 : 0, transition: "all 0.75s ease 0.45s" }}>
-              <p className="hero-theme">«{META.theme}»</p>
-              <div style={{ marginTop: "2.25rem" }} className="hero-cta">
-                <Link to="/programme" className="btn-primary">
-                  Voir le Programme <ArrowRight size={14} />
-                </Link>
-                <Link to="/sponsoring" className="btn-outline">
-                  Devenir Sponsor
-                </Link>
-              </div>
-            </div>
+      {/* ════════════════════════════
+          2. PARTNERS STRIP — full color logos
+      ════════════════════════════ */}
+      <div style={{ background:"#fff", borderBottom:S.rule, overflow:"hidden" }}>
+        <div style={{ ...S.maxW, display:"flex", alignItems:"stretch" }}>
+          {/* blue label tab */}
+          <div style={{ flexShrink:0, padding:"0 1.25rem", background:"#1565C0",
+            display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <span className="ff-m" style={{ fontSize:"0.42rem", letterSpacing:"0.24em",
+              textTransform:"uppercase", color:"rgba(255,255,255,.9)", whiteSpace:"nowrap" }}>
+              Partenaires
+            </span>
           </div>
-
-          <div className="hero-r" style={{ opacity: loaded ? 1 : 0, transition: "opacity 0.75s ease 0.35s" }}>
-            <div className="hero-r-top">
-              <img src={logo} alt="STUD 2026" style={{ height: 60, width: "auto" }} />
-              <div className="v-divider hide-mob" />
-              <div>
-                <div className="cd-label">Compte à rebours</div>
-                <Countdown compact />
-              </div>
-            </div>
-
-            <div className="stats-grid">
-              {STATS.map((s, i) => (
-                <div key={i} className="stat-cell">
-                  <div className="stat-num" style={{ color: i % 2 === 0 ? "var(--ink)" : "var(--blue)" }}>
-                    <Counter target={s.value} />
-                  </div>
-                  <div className="stat-lbl">{s.label}</div>
+          {/* scrolling logos */}
+          <div style={{ flex:1, overflow:"hidden", position:"relative", height:52 }}>
+            <div style={{ position:"absolute", left:0, top:0, bottom:0, width:36,
+              background:"linear-gradient(to right,#fff,transparent)", zIndex:2, pointerEvents:"none" }} />
+            <div style={{ position:"absolute", right:0, top:0, bottom:0, width:36,
+              background:"linear-gradient(to left,#fff,transparent)", zIndex:2, pointerEvents:"none" }} />
+            <div className="ticker-run"
+              style={{ display:"flex", alignItems:"center", gap:0, width:"max-content", height:"100%" }}>
+              {[...PARTNERS,...PARTNERS,...PARTNERS,...PARTNERS].map((p,i) => (
+                <div key={i} style={{ padding:"0 2.25rem", display:"flex", alignItems:"center",
+                  justifyContent:"center", borderRight:S.rule, flexShrink:0, height:"100%" }}>
+                  <img src={p.logo} alt={p.name} className="p-logo"
+                    style={{ height:26, maxWidth:85, objectFit:"contain" }}
+                    onError={e => { e.target.parentElement.style.display="none"; }}
+                  />
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </div>
 
-            <div className="hero-patron">
-              <img src={uniLogo} alt="Université de Douala" style={{ height: 34, width: "auto", opacity: 0.8 }} />
-              <div>
-                <div className="patron-name">{META.patron}</div>
-                <div className="patron-role">Haut Patronage</div>
+      {/* ════════════════════════════
+          3. IDENTITY BAR
+      ════════════════════════════ */}
+      <div style={{ background:"#fff", borderBottom:S.rule }}>
+        <div className="ibar" style={{ ...S.maxW, display:"flex", alignItems:"center",
+          gap:"1.75rem", padding:"1.5rem 2.5rem", flexWrap:"wrap" }}>
+
+          <div className="ld0" style={{ display:"flex", alignItems:"center", gap:"1rem", flexShrink:0 }}>
+            <img src={logo} alt="STUD 2026" style={{ height:48, width:"auto" }} />
+            <div style={{ width:1, height:36, background:S.rule }} className="hide-sm" />
+          </div>
+
+          <div className="ld1" style={{ flex:1, minWidth:200 }}>
+            <div className="ff-m" style={{ fontSize:"0.46rem", letterSpacing:"0.22em",
+              textTransform:"uppercase", color:"#88887F", marginBottom:5 }}>
+              Édition 2026 · 24–30 Avril · Université de Douala
+            </div>
+            <h1 className="ff-b" style={{ fontSize:"clamp(1.6rem,3.5vw,2.8rem)", lineHeight:.9,
+              letterSpacing:"0.02em", color:"#0A0A0A", margin:0 }}>
+              SEMAINE DU <span style={{color:"#1565C0"}}>TRAVAILLEUR</span>{" "}
+              <span style={{color:"#F57C00"}}>2026</span>
+            </h1>
+          </div>
+
+          <div className="ld2 hide-sm" style={{ flexShrink:0, paddingLeft:"1.75rem",
+            borderLeft:S.rule }}>
+            <div className="ff-m" style={{ fontSize:"0.42rem", letterSpacing:"0.2em",
+              textTransform:"uppercase", color:"#88887F", marginBottom:3 }}>
+              Compte à rebours
+            </div>
+            <Countdown compact />
+          </div>
+
+          <div className="ld2 hide-sm" style={{ flexShrink:0, display:"flex",
+            alignItems:"center", gap:"0.65rem", paddingLeft:"1.75rem", borderLeft:S.rule }}>
+            <img src={uniLogo} alt="UDo" style={{ height:28, opacity:.75 }} />
+            <div>
+              <div className="ff-f" style={{ fontWeight:700, fontSize:"0.72rem", color:"#0A0A0A" }}>
+                {META.patron}
+              </div>
+              <div className="ff-m" style={{ fontSize:"0.4rem", textTransform:"uppercase",
+                letterSpacing:"0.12em", color:"#88887F" }}>
+                Haut Patronage
               </div>
             </div>
           </div>
+
+          <div className="ld3" style={{ display:"flex", gap:"0.5rem", flexShrink:0, flexWrap:"wrap" }}>
+            <Link to="/programme" className="btn-blue ff-m"
+              style={{ background:"#1565C0", color:"#fff", padding:"0.6rem 1.25rem",
+                fontSize:"0.54rem", letterSpacing:"0.14em", textTransform:"uppercase",
+                textDecoration:"none", display:"inline-flex", alignItems:"center",
+                gap:"0.4rem", borderRadius:3 }}>
+              Programme <ArrowRight size={11} />
+            </Link>
+            <Link to="/sponsoring" className="btn-ink ff-m"
+              style={{ border:"1.5px solid #0A0A0A", color:"#0A0A0A", padding:"0.6rem 1.25rem",
+                fontSize:"0.54rem", letterSpacing:"0.14em", textTransform:"uppercase",
+                textDecoration:"none", borderRadius:3 }}>
+              Sponsor
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* stats strip */}
+      <div ref={statsStagger} className="stats-g"
+        style={{ ...S.maxW, display:"grid", gridTemplateColumns:"repeat(4,1fr)",
+          background:"#fff", borderBottom:S.ruleHeavy }}>
+        {STATS.map((s,i) => (
+          <div key={i} className="stat-cell ld4"
+            style={{ padding:"1rem 2rem", borderLeft: i>0?S.rule:"none" }}>
+            <div className="ff-b" style={{ fontSize:"clamp(1.4rem,2.4vw,2.4rem)", lineHeight:1,
+              color: i%2===0?"#0A0A0A":"#1565C0" }}>
+              <Counter target={s.value} />
+            </div>
+            <div className="ff-m" style={{ fontSize:"0.44rem", textTransform:"uppercase",
+              letterSpacing:"0.16em", color:"#88887F", marginTop:2 }}>
+              {s.label}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── VISITOR COUNTER STRIP ── */}
+      {visitorCount !== null && (
+        <Reveal>
+          <div style={{ background:"#0A0A0A", borderBottom:S.ruleHeavy }}>
+            <div style={{ ...S.maxW, display:"flex", alignItems:"center",
+              justifyContent:"center", gap:"1rem", padding:"0.75rem 2.5rem",
+              flexWrap:"wrap" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:"0.5rem" }}>
+                <span style={{ width:7, height:7, borderRadius:"50%",
+                  background:"#4CAF50", display:"inline-block",
+                  boxShadow:"0 0 0 2px rgba(76,175,80,.3)",
+                  animation:"livepulse 2s infinite" }} />
+                <span className="ff-m" style={{ fontSize:"0.48rem",
+                  letterSpacing:"0.2em", textTransform:"uppercase",
+                  color:"rgba(255,255,255,.4)" }}>
+                  Site en ligne
+                </span>
+              </div>
+              <div style={{ width:1, height:16,
+                background:"rgba(255,255,255,.1)" }} />
+              <div style={{ display:"flex", alignItems:"baseline", gap:"0.5rem" }}>
+                <span className="ff-b" style={{ fontSize:"1.4rem",
+                  letterSpacing:"0.04em", color:"#fff", lineHeight:1 }}>
+                  {visitorCount.toLocaleString("fr-FR")}
+                </span>
+                <span className="ff-m" style={{ fontSize:"0.46rem",
+                  letterSpacing:"0.18em", textTransform:"uppercase",
+                  color:"rgba(255,255,255,.4)" }}>
+                  visiteurs uniques
+                </span>
+              </div>
+              <div style={{ width:1, height:16,
+                background:"rgba(255,255,255,.1)" }} />
+              <span className="ff-m" style={{ fontSize:"0.44rem",
+                letterSpacing:"0.14em", textTransform:"uppercase",
+                color:"rgba(255,255,255,.28)" }}>
+                STUD 2026
+              </span>
+            </div>
+          </div>
+        </Reveal>
+      )}
+
+      {/* ════════════════════════════
+          4. VISUAL FEED
+          Big card + 3 small + partners carousel
+      ════════════════════════════ */}
+      <div style={{ ...S.maxW, padding:"2rem 2.5rem" }}>
+        <Reveal delay={0.05}>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
+            marginBottom:"1rem", flexWrap:"wrap", gap:"0.5rem" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:"0.6rem" }}>
+              <span className="live" style={{ width:8, height:8, borderRadius:"50%",
+                background:"#F57C00", display:"inline-block" }} />
+              <span className="ff-b" style={{ fontSize:"1.35rem", letterSpacing:"0.06em" }}>
+                Moments en <span style={{color:"#1565C0"}}>Images</span>
+              </span>
+            </div>
+            <Link to="/gallery" className="lnk ff-m"
+              style={{ border:"1px solid #1565C0", color:"#1565C0", padding:"0.28rem 0.7rem",
+                fontSize:"0.5rem", letterSpacing:"0.14em", textTransform:"uppercase",
+                textDecoration:"none", display:"inline-flex", alignItems:"center",
+                gap:"0.3rem", borderRadius:2 }}>
+              Galerie <ArrowRight size={9} />
+            </Link>
+          </div>
+        </Reveal>
+
+        {/* main grid */}
+        <div ref={feedStagger} className="feed-grid"
+          style={{ display:"grid", gridTemplateColumns:"1.5fr 1fr",
+            gridTemplateRows:"240px 240px", gap:10, marginBottom:10 }}>
+          {/* big card — spans 2 rows */}
+          <ImgCard item={feed[0]} big style={{ gridRow:"1 / 3" }} className="feed-big" />
+          {/* top right */}
+          <ImgCard item={feed[1]} style={{ borderRadius:10 }} />
+          {/* bottom right: 2 side by side */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+            <ImgCard item={feed[2]} style={{ borderRadius:10 }} />
+            <PartnersCarouselCard />
+          </div>
+        </div>
+
+        {/* 4th image — wide strip */}
+        <Reveal delay={0.1}>
+          <ImgCard item={feed[3]} style={{ height:150, borderRadius:10, display:"block" }} />
+        </Reveal>
+      </div>
+
+      {/* ════════════════════════════
+          5. FACULTY STRIP — "Ils Prendront Part"
+      ════════════════════════════ */}
+      <FacultyStrip />
+
+      {/* ════════════════════════════
+          6. ANNOUNCEMENTS
+          (moved here, below faculty strip)
+      ════════════════════════════ */}
+      <div style={{ background:"#fff", borderTop:S.ruleHeavy, borderBottom:S.ruleHeavy }}>
+        <div style={{ ...S.maxW }}>
+          <Reveal>
+            <div className="sec-pad" style={{ ...S.secHdr }}>
+              <span className="ff-b" style={{ fontSize:"1.35rem", letterSpacing:"0.06em",
+                display:"flex", alignItems:"center", gap:"0.5rem" }}>
+                <Megaphone size={18} strokeWidth={1.5} style={{color:"#F57C00"}} />
+                Dernières <span style={{color:"#F57C00", marginLeft:5}}>Annonces</span>
+              </span>
+              <Link to="/announcements" className="lnk ff-m"
+                style={{ border:"1px solid #1565C0", color:"#1565C0", padding:"0.28rem 0.7rem",
+                  fontSize:"0.5rem", letterSpacing:"0.14em", textTransform:"uppercase",
+                  textDecoration:"none", display:"inline-flex", alignItems:"center",
+                  gap:"0.3rem", borderRadius:2 }}>
+                Toutes <ArrowRight size={9} />
+              </Link>
+            </div>
+          </Reveal>
+
+          {anns.length === 0 ? (
+            <Reveal delay={0.1}>
+              <div style={{ padding:"3rem 2.5rem", textAlign:"center" }}>
+                <p className="ff-f" style={{ fontStyle:"italic", color:"#88887F", fontSize:"0.9rem" }}>
+                  Aucune annonce pour le moment.
+                </p>
+              </div>
+            </Reveal>
+          ) : (
+            <div ref={annStagger} className="g3"
+              style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)" }}>
+              {anns.map((ann, i) => {
+                const cc = CAT_COLORS[ann.category] || "#1565C0";
+                return (
+                  <Link key={ann.id} to="/announcements" className="ann-card"
+                    style={{ display:"flex", flexDirection:"column", textDecoration:"none",
+                      height:"100%", borderLeft: i>0?S.rule:"none" }}>
+                    {/* top color bar */}
+                    <div style={{ height:4, background:cc, flexShrink:0 }} />
+                    <div style={{ padding:"1.5rem 2rem", display:"flex", flexDirection:"column",
+                      gap:"0.6rem", flex:1 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:"0.5rem", flexWrap:"wrap" }}>
+                        {ann.pinned && <Pin size={10} style={{color:cc}} />}
+                        <span className="ff-m" style={{ fontSize:"0.46rem", textTransform:"uppercase",
+                          letterSpacing:"0.16em", color:cc }}>{ann.category}</span>
+                        <span className="ff-m" style={{ fontSize:"0.44rem", color:"#88887F",
+                          marginLeft:"auto" }}>{timeAgo(ann.created_at)}</span>
+                      </div>
+                      <h3 className="ff-f" style={{ fontWeight:700, fontSize:"0.95rem",
+                        color:"#0A0A0A", lineHeight:1.4, margin:0 }}>{ann.title}</h3>
+                      <p className="ff-f" style={{ fontStyle:"italic", fontSize:"0.8rem",
+                        color:"#3D3D38", lineHeight:1.7, margin:0, flex:1 }}>
+                        {ann.body.length>110 ? ann.body.slice(0,110)+"…" : ann.body}
+                      </p>
+                      <div className="ff-m" style={{ fontSize:"0.44rem", color:"#88887F",
+                        paddingTop:"0.5rem", borderTop:S.rule }}>{ann.author}</div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ════════════════════════════
+          7. OBJECTIVES
+      ════════════════════════════ */}
+      <section style={{ borderBottom:S.ruleHeavy }}>
+        <div style={{ ...S.maxW }}>
+          <Reveal>
+            <div className="sec-pad" style={{ ...S.secHdr }}>
+              <span className="ff-b" style={{ fontSize:"1.35rem", letterSpacing:"0.06em" }}>
+                Nos Objectifs
+              </span>
+              <span className="ff-m" style={{ fontSize:"0.46rem", textTransform:"uppercase",
+                letterSpacing:"0.16em", color:"#88887F" }}>
+                STUD 2026 — Section 01
+              </span>
+            </div>
+          </Reveal>
+          <div ref={objStagger} className="g4"
+            style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)" }}>
+            {OBJECTIVES.map((o,i) => (
+              <div key={i} className="obj-card"
+                style={{ padding:"2.25rem 1.75rem", borderLeft: i>0?S.rule:"none" }}>
+                <div className="obj-num ff-b"
+                  style={{ fontSize:"4.5rem", lineHeight:1, marginBottom:"1.1rem",
+                    color: i%2===0?"#1565C0":"#ddd" }}>
+                  {o.num}
+                </div>
+                <div style={{ aspectRatio:"4/3", borderRadius:6, marginBottom:"1.1rem",
+                  background: i%2===0?"#EEF4FF":"#FFF8EE",
+                  display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <img src={OBJ_ILLUSTRATIONS[i]} alt={o.title}
+                    style={{ width:"72%", height:"72%", objectFit:"contain" }}
+                    onError={e=>{ e.target.parentElement.style.display="none"; }} />
+                </div>
+                <h3 className="ff-f" style={{ fontWeight:700, fontSize:"0.95rem",
+                  marginBottom:"0.45rem" }}>{o.title}</h3>
+                <p className="ff-f" style={{ fontStyle:"italic", fontSize:"0.8rem",
+                  color:"#3D3D38", lineHeight:1.75 }}>{o.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ── UNIVERSITY ── */}
-      <section ref={uniRef} className="uni-section">
-        <div className="uni-grid">
-          <div className="uni-img-wrap">
-            <img src={uniImg} alt="Université de Douala"
-              style={{ opacity: uniV ? 1 : 0.2, transform: uniV ? "scale(1)" : "scale(1.06)", transition: "all 1.4s ease" }} />
-            <div className="uni-img-overlay" />
-            <div className="uni-img-caption">
-              <div className="uni-img-city">Douala, Cameroun</div>
-              <div className="uni-img-name">Université de Douala</div>
+      {/* ════════════════════════════
+          8. UNIVERSITY
+      ════════════════════════════ */}
+      <section style={{ borderBottom:S.ruleHeavy }}>
+        <div className="g2" style={{ ...S.maxW, display:"grid", gridTemplateColumns:"1fr 1fr" }}>
+          {/* image side */}
+          <Reveal from="left">
+            <div style={{ position:"relative", minHeight:440, overflow:"hidden" }}>
+              <img src={uniImg} alt="Université de Douala" className="uni-reveal"
+                style={{ position:"absolute", inset:0, width:"100%", height:"100%",
+                  objectFit:"cover" }} />
+              <div style={{ position:"absolute", inset:0,
+                background:"linear-gradient(160deg,rgba(0,0,0,.55) 0%,rgba(0,0,0,.05) 60%,transparent 100%)" }} />
+              <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"2rem" }}>
+                <div className="ff-m" style={{ fontSize:"0.48rem", letterSpacing:"0.2em",
+                  textTransform:"uppercase", color:"rgba(255,255,255,.4)", marginBottom:6 }}>
+                  Douala, Cameroun
+                </div>
+                <div className="ff-b" style={{ fontSize:"1.7rem", color:"#fff", letterSpacing:"0.04em" }}>
+                  Université de Douala
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="uni-r" style={fadeIn(uniV)}>
-            <div className="uni-top">
-              <img src={uniLogo} alt="Logo UDo" style={{ height: 50, width: "auto" }} />
-              <div className="v-divider hide-mob" />
-              <div className="uni-meta">Fondée en 1977<br />48 871 Étudiants</div>
-            </div>
-            <h2 className="uni-h2">
-              UN ÉVÉNEMENT<br />
-              <span style={{ color: "var(--blue)" }}>INSTITUTIONNEL</span><br />
-              D'ENVERGURE
-            </h2>
-            <p className="uni-desc">
-              La STUD 2026 est organisée sous le haut patronage du {META.patron}, Recteur de l'Université de Douala. Elle réunit l'ensemble du personnel des 3 campus dans un esprit de célébration, de cohésion et d'excellence.
-            </p>
-            <Link to="/about" className="btn-primary" style={{ alignSelf: "flex-start" }}>
-              Découvrir l'Université <ArrowRight size={14} />
-            </Link>
-          </div>
-        </div>
-      </section>
-      {/* ── PARTNERS MARQUEE ─────────────────────────────── NEW ── */}
-      <PartnersMarquee />
-      {/* ── GALLERY PREVIEW ── */}
-      <section ref={mediaRef} className="gallery-section">
-        <div className="sec-hdr">
-          <span className="sec-hdr-title">
-            <Images size={24} strokeWidth={1.5} color="var(--blue)" />
-            Derniers&nbsp;<span style={{ color: "var(--blue)" }}>Moments</span>
-          </span>
-          <Link to="/gallery" className="sec-link">Voir la galerie <ArrowRight size={11} /></Link>
-        </div>
-        {galleryItems.length === 0 ? (
-          <div className="gallery-empty" style={{ maxWidth: 1280, margin: "0 auto" }}>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "3.5rem", color: "#EAEAE5", letterSpacing: "0.04em", marginBottom: "0.75rem" }}>À VENIR</div>
-            <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", color: "var(--muted)", fontSize: "0.9rem", marginBottom: "2rem" }}>Les photos de l'événement seront publiées ici.</p>
-            <Link to="/gallery" className="btn-primary" style={{ display: "inline-flex" }}>
-              Accéder à la galerie <ArrowRight size={14} />
-            </Link>
-          </div>
-        ) : (
-          <div className="gallery-grid">
-            {galleryItems.map((item, i) => (
-              <Link key={item.id} to="/gallery" className="gal-item" style={fadeIn(mediaV, i)}>
-                {item.type === "video" ? (
-                  <div style={{ width: "100%", height: "100%", background: "#0D1B2A", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(255,255,255,0.2)" }}>
-                      <Play size={18} color="#fff" />
-                    </div>
-                  </div>
-                ) : (
-                  <img src={item.url} alt={item.caption || ""} />
-                )}
-                {item.caption && (
-                  <>
-                    <div className="gal-overlay" />
-                    <div className="gal-cap">{item.caption}</div>
-                  </>
-                )}
+          </Reveal>
+
+          {/* text side */}
+          <Reveal from="right">
+            <div style={{ padding:"3rem", background:"#fff", display:"flex",
+              flexDirection:"column", justifyContent:"center", minHeight:440 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:"1rem",
+                marginBottom:"1.75rem", flexWrap:"wrap" }}>
+                <img src={uniLogo} alt="Logo UDo" style={{ height:44 }} />
+                <div style={{ width:1, height:38, background:S.rule }} />
+                <div className="ff-m" style={{ fontSize:"0.5rem", textTransform:"uppercase",
+                  letterSpacing:"0.14em", color:"#88887F", lineHeight:1.8 }}>
+                  Fondée en 1977<br/>48 871 Étudiants
+                </div>
+              </div>
+              <h2 className="ff-b" style={{ fontSize:"clamp(1.8rem,3.5vw,3.4rem)",
+                lineHeight:.95, letterSpacing:"0.02em", marginBottom:"1rem" }}>
+                UN ÉVÉNEMENT<br/><span style={{color:"#1565C0"}}>INSTITUTIONNEL</span><br/>D'ENVERGURE
+              </h2>
+              <p className="ff-f" style={{ fontStyle:"italic", fontSize:"0.9rem",
+                color:"#3D3D38", lineHeight:1.9, maxWidth:400, marginBottom:"1.75rem" }}>
+                La STUD 2026 est organisée sous le haut patronage du {META.patron}, Recteur
+                de l'Université de Douala. Elle réunit l'ensemble du personnel des 3 campus
+                dans un esprit de célébration, de cohésion et d'excellence.
+              </p>
+              <Link to="/about" className="btn-blue ff-m"
+                style={{ background:"#1565C0", color:"#fff", padding:"0.7rem 1.5rem",
+                  fontSize:"0.54rem", letterSpacing:"0.14em", textTransform:"uppercase",
+                  textDecoration:"none", display:"inline-flex", alignItems:"center",
+                  gap:"0.4rem", alignSelf:"flex-start", borderRadius:3 }}>
+                Découvrir l'Université <ArrowRight size={12} />
               </Link>
-            ))}
-          </div>
-        )}
-      </section>
-<FacultyStrip />
-      {/* ── ANNOUNCEMENTS PREVIEW ── */}
-      <section className="ann-section">
-        <div className="sec-hdr">
-          <span className="sec-hdr-title">
-            <Megaphone size={24} strokeWidth={1.5} color="var(--orange)" />
-            Dernières&nbsp;<span style={{ color: "var(--orange)" }}>Annonces</span>
-          </span>
-          <Link to="/announcements" className="sec-link">Toutes les annonces <ArrowRight size={11} /></Link>
+            </div>
+          </Reveal>
         </div>
-        {announcements.length === 0 ? (
-          <div style={{ maxWidth: 1280, margin: "0 auto", padding: "4rem 2.5rem", textAlign: "center" }}>
-            <p style={{ fontFamily: "'Fraunces', serif", fontStyle: "italic", color: "var(--muted)" }}>Aucune annonce pour le moment.</p>
-          </div>
-        ) : (
-          <div className="ann-grid">
-            {announcements.map((ann) => {
-              const catColor = CAT_COLORS[ann.category] || "var(--blue)";
+      </section>
+
+      {/* ════════════════════════════
+          9. FEATURED PROGRAMME
+      ════════════════════════════ */}
+      <section style={{ borderBottom:S.ruleHeavy }}>
+        <div style={{ ...S.maxW }}>
+          <Reveal>
+            <div className="sec-pad" style={{ ...S.secHdr }}>
+              <span className="ff-b" style={{ fontSize:"1.35rem", letterSpacing:"0.06em" }}>
+                À l'Affiche
+              </span>
+              <Link to="/programme" className="lnk ff-m"
+                style={{ border:"1px solid #1565C0", color:"#1565C0", padding:"0.28rem 0.7rem",
+                  fontSize:"0.5rem", letterSpacing:"0.14em", textTransform:"uppercase",
+                  textDecoration:"none", display:"inline-flex", alignItems:"center",
+                  gap:"0.3rem", borderRadius:2 }}>
+                Programme complet <ArrowRight size={9} />
+              </Link>
+            </div>
+          </Reveal>
+          <div ref={pgStagger} className="g3"
+            style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)" }}>
+            {featuredEvents.map((ev,i) => {
+              const isDark = i===0;
               return (
-                <Link key={ann.id} to="/announcements" className="ann-item">
-                  <div className="ann-bar" style={{ background: catColor }} />
-                  <div className="ann-body">
-                    <div className="ann-meta">
-                      {ann.pinned && <Pin size={10} color={catColor} />}
-                      <span className="ann-cat" style={{ color: catColor }}>{ann.category}</span>
-                      <span className="ann-time">{timeAgo(ann.created_at)}</span>
-                    </div>
-                    <h3 className="ann-title">{ann.title}</h3>
-                    <p className="ann-excerpt">{ann.body.length > 120 ? ann.body.slice(0, 120) + "…" : ann.body}</p>
-                    <div className="ann-author">{ann.author}</div>
+                <div key={i} className={`prog-card ${isDark?"dark":"light"}`}
+                  style={{ padding:"2rem 2.25rem",
+                    color: isDark?"rgba(255,255,255,.9)":"#0A0A0A",
+                    borderLeft: i%3!==0?S.rule:"none",
+                    borderBottom: i<3?S.rule:"none" }}>
+                  <div className="ff-m" style={{ fontSize:"0.5rem", textTransform:"uppercase",
+                    letterSpacing:"0.16em", color: isDark?"#F57C00":"#88887F",
+                    marginBottom:"0.75rem" }}>{ev.date}</div>
+                  <div style={{ height:56, display:"flex", alignItems:"center",
+                    marginBottom:"0.75rem" }}>
+                    <img src={`/assets/${ev.svg}`} alt={ev.name}
+                      style={{ height:"100%", width:"auto", maxWidth:"50%", objectFit:"contain",
+                        filter: isDark?"brightness(0) invert(1)":"none",
+                        opacity: isDark ? .65 : 1 }}
+                      onError={e=>{ e.target.style.display="none"; }} />
                   </div>
-                </Link>
+                  <h3 className="ff-f" style={{ fontWeight:700, fontSize:"0.95rem",
+                    lineHeight:1.35, marginBottom:"0.5rem" }}>{ev.name}</h3>
+                  <p className="ff-f" style={{ fontStyle:"italic", fontSize:"0.8rem",
+                    lineHeight:1.7,
+                    color: isDark?"rgba(255,255,255,.42)":"#3D3D38" }}>
+                    {ev.description}
+                  </p>
+                </div>
               );
             })}
           </div>
-        )}
+        </div>
       </section>
 
-      {/* ── OBJECTIVES ── */}
-      <section ref={objRef} className="obj-section">
-        <div className="sec-hdr">
-          <span className="sec-hdr-title">Nos Objectifs</span>
-          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: "0.54rem", color: "var(--muted)", letterSpacing: "0.16em", textTransform: "uppercase" }}>STUD 2026 — Section 01</span>
-        </div>
-        <div className="obj-grid">
-          {OBJECTIVES.map((o, i) => (
-            <div key={i} className="obj-item" style={fadeIn(objV, i)}>
-              <div className="obj-num" style={{ color: i % 2 === 0 ? "var(--blue)" : "#DDDDD5" }}>{o.num}</div>
-              <div className="obj-illus" style={{ background: i % 2 === 0 ? "var(--blue-light)" : "#FFF8EE" }}>
-                <img src={OBJ_ILLUSTRATIONS[i]} alt={o.title}
-                  onError={e => { e.target.parentElement.style.display = "none"; }} />
-              </div>
-              <h3 className="obj-title">{o.title}</h3>
-              <p className="obj-desc">{o.desc}</p>
+      {/* ════════════════════════════
+          10. SPONSORING
+      ════════════════════════════ */}
+      <section style={{ borderBottom:S.ruleHeavy, background:"#fff" }}>
+        <div style={{ ...S.maxW }}>
+          <Reveal>
+            <div className="sec-pad" style={{ ...S.secHdr }}>
+              <span className="ff-b" style={{ fontSize:"1.35rem", letterSpacing:"0.06em" }}>
+                Packages Sponsoring
+              </span>
+              <Link to="/sponsoring" className="lnk ff-m"
+                style={{ border:"1px solid #1565C0", color:"#1565C0", padding:"0.28rem 0.7rem",
+                  fontSize:"0.5rem", letterSpacing:"0.14em", textTransform:"uppercase",
+                  textDecoration:"none", display:"inline-flex", alignItems:"center",
+                  gap:"0.3rem", borderRadius:2 }}>
+                Voir les offres <ArrowRight size={9} />
+              </Link>
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── FEATURED PROGRAMME ── */}
-      <section ref={pgRef} className="prog-section">
-        <div className="sec-hdr">
-          <span className="sec-hdr-title">À l'Affiche</span>
-          <Link to="/programme" className="sec-link">Programme complet <ArrowRight size={11} /></Link>
-        </div>
-        <div className="prog-grid">
-          {featuredEvents.map((ev, i) => {
-            const isDark = i === 0;
-            return (
-              <div key={i}
-                className={`prog-item ${i < 3 ? "prog-row-b" : ""} ${isDark ? "prog-item--dark" : ""}`}
-                style={{
-                  color: isDark ? "rgba(255,255,255,0.9)" : "var(--ink)",
-                  borderLeft: i % 3 !== 0 ? "1px solid var(--rule)" : "none",
-                  ...fadeIn(pgV, i)
-                }}>
-                <div className="prog-date" style={{ color: isDark ? "var(--orange)" : "var(--muted)" }}>{ev.date}</div>
-                <div className="prog-img">
-                  <img src={`/assets/${ev.svg}`} alt={ev.name}
-                    style={{ filter: isDark ? "brightness(0) invert(1)" : "none", opacity: isDark ? 0.65 : 1 }}
-                    onError={e => { e.target.style.display = "none"; }} />
+          </Reveal>
+          <div ref={spStagger} className="g3"
+            style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)" }}>
+            {SPONSORING.map((offer,i) => (
+              <div key={i} style={{ borderLeft: i>0?S.rule:"none" }}>
+                <div style={{ height:4, background:offer.color }} />
+                <div style={{ padding:"2.25rem 2rem" }}>
+                  <div className="ff-m" style={{ fontSize:"0.5rem", textTransform:"uppercase",
+                    letterSpacing:"0.2em", color:offer.color, marginBottom:"0.3rem" }}>
+                    {offer.badge} Offre {offer.tier}
+                  </div>
+                  <div className="ff-b" style={{ fontSize:"clamp(1.8rem,3vw,3rem)",
+                    lineHeight:1, marginBottom:"0.15rem" }}>{offer.price}</div>
+                  <div className="ff-m" style={{ fontSize:"0.5rem", color:"#88887F",
+                    marginBottom:"1.5rem" }}>{offer.currency}</div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:"0.45rem",
+                    marginBottom:"1.5rem" }}>
+                    {offer.visibility.slice(0,3).map((v,j) => (
+                      <div key={j} className="ff-f"
+                        style={{ display:"flex", gap:"0.55rem", fontSize:"0.8rem", color:"#3D3D38" }}>
+                        <span style={{ color:offer.color, fontWeight:700 }}>—</span>{v}
+                      </div>
+                    ))}
+                    {offer.visibility.length>3 && (
+                      <div className="ff-m" style={{ fontSize:"0.48rem", color:"#88887F" }}>
+                        +{offer.visibility.length-3} avantages supplémentaires
+                      </div>
+                    )}
+                  </div>
+                  <Link to="/sponsoring"
+                    style={{ display:"block", textAlign:"center",
+                      border:`1.5px solid ${offer.color}`, color:offer.color,
+                      padding:"0.75rem", fontSize:"0.55rem", textTransform:"uppercase",
+                      letterSpacing:"0.14em", textDecoration:"none", borderRadius:2,
+                      transition:"background .18s,color .18s" }}
+                    onMouseEnter={e=>{ e.currentTarget.style.background=offer.color; e.currentTarget.style.color="#fff"; }}
+                    onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.color=offer.color; }}>
+                    En savoir plus →
+                  </Link>
                 </div>
-                <h3 className="prog-name">{ev.name}</h3>
-                <p className="prog-desc" style={{ color: isDark ? "rgba(255,255,255,0.45)" : "var(--ink-soft)" }}>{ev.description}</p>
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ── SPONSORING PREVIEW ── */}
-      <section ref={spRef} className="sp-section">
-        <div className="sec-hdr">
-          <span className="sec-hdr-title">Packages Sponsoring</span>
-          <Link to="/sponsoring" className="sec-link">Voir les offres <ArrowRight size={11} /></Link>
-        </div>
-        <div className="sp-grid">
-          {SPONSORING.map((offer, i) => (
-            <div key={i} className="sp-item" style={fadeIn(spV, i * 1.5)}>
-              <div className="sp-top-bar" style={{ background: offer.color }} />
-              <div className="sp-inner">
-                <div className="sp-tier" style={{ color: offer.color }}>{offer.badge} Offre {offer.tier}</div>
-                <div className="sp-price">{offer.price}</div>
-                <div className="sp-currency">{offer.currency}</div>
-                <div className="sp-features">
-                  {offer.visibility.slice(0, 3).map((v, j) => (
-                    <div key={j} className="sp-feature">
-                      <span style={{ color: offer.color, fontWeight: 700, flexShrink: 0 }}>—</span>
-                      {v}
-                    </div>
-                  ))}
-                  {offer.visibility.length > 3 && (
-                    <div className="sp-more">+{offer.visibility.length - 3} avantages supplémentaires</div>
-                  )}
+      {/* ── TESTIMONIALS ── */}
+      <TestimonialsCarousel />
+
+      {/* ════════════════════════════
+          EVALUATION CTA STRIP
+          Visible to all visitors
+      ════════════════════════════ */}
+      <Reveal>
+        <section style={{ borderTop:"2px solid #ede9e0", borderBottom:"2px solid #ede9e0" }}>
+          <div style={{ ...S.maxW, display:"flex", alignItems:"center",
+            justifyContent:"space-between", flexWrap:"wrap", gap:"1.5rem",
+            padding:"2.25rem 2.5rem" }}>
+
+            {/* left: icon + text */}
+            <div style={{ display:"flex", alignItems:"center", gap:"1.25rem" }}>
+              <div style={{ width:52, height:52, borderRadius:"50%", background:"#EEF4FF",
+                display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                <span style={{ fontSize:"1.4rem" }}>⭐</span>
+              </div>
+              <div>
+                <div className="ff-m" style={{ fontSize:"0.46rem", textTransform:"uppercase",
+                  letterSpacing:"0.2em", color:"#88887F", marginBottom:4 }}>
+                  Votre avis compte
                 </div>
-                <Link to="/sponsoring" className="sp-cta"
-                  style={{ borderColor: offer.color, color: offer.color }}
-                  onMouseEnter={e => { e.currentTarget.style.background = offer.color; e.currentTarget.style.color = "#fff"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = offer.color; }}>
-                  En savoir plus →
+                <h3 className="ff-b" style={{ fontSize:"clamp(1.1rem,2.5vw,1.7rem)",
+                  letterSpacing:"0.04em", color:"#0A0A0A", margin:0, lineHeight:.95 }}>
+                  ÉVALUEZ LA{" "}
+                  <span style={{color:"#1565C0"}}>STUD 2026</span>
+                </h3>
+                <p className="ff-f" style={{ fontStyle:"italic", fontSize:"0.8rem",
+                  color:"#88887F", margin:"0.35rem 0 0", lineHeight:1.5 }}>
+                  Partagez votre expérience et aidez-nous à améliorer les prochaines éditions.
+                </p>
+              </div>
+            </div>
+
+            {/* right: CTA button */}
+            <Link to="/evaluation"
+              style={{ flexShrink:0, background:"#1565C0", color:"#fff",
+                padding:"0.85rem 2rem", fontFamily:"'DM Mono',monospace",
+                fontSize:"0.58rem", letterSpacing:"0.16em", textTransform:"uppercase",
+                textDecoration:"none", borderRadius:4,
+                display:"inline-flex", alignItems:"center", gap:"0.5rem",
+                transition:"background .2s, transform .2s",
+                boxShadow:"0 2px 12px rgba(21,101,192,.2)" }}
+              onMouseEnter={e=>{ e.currentTarget.style.background="#0D47A1"; e.currentTarget.style.transform="translateX(2px)"; }}
+              onMouseLeave={e=>{ e.currentTarget.style.background="#1565C0"; e.currentTarget.style.transform="none"; }}>
+              Donner mon avis <ArrowRight size={13} />
+            </Link>
+          </div>
+        </section>
+      </Reveal>
+
+      {/* ════════════════════════════
+          11. BOTTOM CTA
+      ════════════════════════════ */}
+      <section>
+        <div className="g2" style={{ ...S.maxW, display:"grid",
+          gridTemplateColumns:"1fr 1fr", minHeight:250 }}>
+          <Reveal from="left">
+            <div style={{ padding:"3rem 2.5rem", display:"flex", flexDirection:"column",
+              justifyContent:"space-between", borderRight:S.rule, background:"#fff",
+              minHeight:250 }}>
+              <div className="ff-m" style={{ fontSize:"0.46rem", textTransform:"uppercase",
+                letterSpacing:"0.22em", color:"#88887F" }}>En savoir plus</div>
+              <div>
+                <h2 className="ff-b" style={{ fontSize:"clamp(2rem,4vw,4rem)", lineHeight:.92,
+                  letterSpacing:"0.02em", marginBottom:"1.25rem" }}>
+                  À PROPOS DE<br/><span style={{color:"#1565C0"}}>L'UNIVERSITÉ</span>
+                </h2>
+                <Link to="/about" className="btn-ink ff-m"
+                  style={{ border:"1.5px solid #0A0A0A", color:"#0A0A0A",
+                    padding:"0.7rem 1.5rem", fontSize:"0.54rem", letterSpacing:"0.14em",
+                    textTransform:"uppercase", textDecoration:"none",
+                    display:"inline-flex", alignItems:"center", gap:"0.4rem", borderRadius:3 }}>
+                  Découvrir l'Histoire →
                 </Link>
               </div>
             </div>
-          ))}
+          </Reveal>
+          <Reveal from="right">
+            <div style={{ padding:"3rem 2.5rem", background:"#0A0A0A",
+              display:"flex", flexDirection:"column", justifyContent:"space-between",
+              minHeight:250 }}>
+              <div className="ff-m" style={{ fontSize:"0.46rem", textTransform:"uppercase",
+                letterSpacing:"0.22em", color:"rgba(255,255,255,.25)" }}>Partenariat</div>
+              <div>
+                <h2 className="ff-b" style={{ fontSize:"clamp(2rem,4vw,4rem)", lineHeight:.92,
+                  letterSpacing:"0.02em", color:"#FAFAF8", marginBottom:"1.25rem" }}>
+                  DEVENEZ<br/>SPONSOR
+                </h2>
+                <Link to="/sponsoring" className="btn-ghost ff-m"
+                  style={{ border:"1.5px solid rgba(255,255,255,.3)",
+                    color:"rgba(255,255,255,.8)", padding:"0.7rem 1.5rem",
+                    fontSize:"0.54rem", letterSpacing:"0.14em", textTransform:"uppercase",
+                    textDecoration:"none", display:"inline-flex", alignItems:"center",
+                    gap:"0.4rem", borderRadius:3 }}>
+                  Voir les offres →
+                </Link>
+              </div>
+            </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* ── TESTIMONIALS CAROUSEL ────────────────────────── NEW ── */}
-      <TestimonialsCarousel />
-
-      {/* ── BOTTOM CTA ── */}
-      <section className="cta-section">
-        <div className="cta-grid">
-          <div className="cta-l">
-            <div className="cta-label" style={{ color: "var(--muted)" }}>En savoir plus</div>
-            <div>
-              <h2 className="cta-h2">
-                À PROPOS DE<br /><span style={{ color: "var(--blue)" }}>L'UNIVERSITÉ</span>
-              </h2>
-              <Link to="/about" className="btn-outline">Découvrir l'Histoire →</Link>
-            </div>
-          </div>
-          <div className="cta-r">
-            <div className="cta-label" style={{ color: "rgba(255,255,255,0.3)" }}>Partenariat</div>
-            <div>
-              <h2 className="cta-h2" style={{ color: "#FAFAF8" }}>
-                DEVENEZ<br />SPONSOR
-              </h2>
-              <Link to="/sponsoring" className="btn-outline btn-outline--white">Voir les offres →</Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── FEEDBACK FAB (fixed, bottom-right) ──────────── NEW ── */}
       <FeedbackFAB />
     </div>
   );

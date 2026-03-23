@@ -10,6 +10,7 @@ import Contact from "./pages/contact";
 import Gallery from "./pages/gallery";
 import Announcements from "./pages/announcements";
 import AdminPanel from "./pages/adminPanel";
+import EvaluationPage from "./pages/EvaluationPage";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -17,8 +18,6 @@ function ScrollToTop() {
   return null;
 }
 
-// Public pages wrap with Navbar + Footer
-// Admin page has its own full-page layout (no Navbar/Footer)
 function PublicLayout({ children }) {
   return (
     <>
@@ -34,20 +33,23 @@ export default function App() {
     <BrowserRouter>
       <ScrollToTop />
       <Routes>
-        {/* ── Secret admin route — not linked anywhere ── */}
+        {/* ── Secret admin route ── */}
         <Route path="/stud-admin-2026" element={<AdminPanel />} />
+
+        {/* ── Evaluation — no Navbar/Footer clutter, standalone ── */}
+        <Route path="/evaluation" element={<EvaluationPage />} />  {/* ← NEW */}
 
         {/* ── Public routes ── */}
         <Route path="/*" element={
           <PublicLayout>
             <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/programme" element={<Programme />} />
-              <Route path="/sponsoring" element={<Sponsoring />} />
-              <Route path="/gallery" element={<Gallery />} />
+              <Route path="/"             element={<Home />} />
+              <Route path="/about"        element={<About />} />
+              <Route path="/programme"    element={<Programme />} />
+              <Route path="/sponsoring"   element={<Sponsoring />} />
+              <Route path="/gallery"      element={<Gallery />} />
               <Route path="/announcements" element={<Announcements />} />
-              <Route path="/contact" element={<Contact />} />
+              <Route path="/contact"      element={<Contact />} />
             </Routes>
           </PublicLayout>
         } />
