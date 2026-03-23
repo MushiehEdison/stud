@@ -1,3 +1,10 @@
+// ============================================================
+// home.jsx — v5
+// ✓ Partner logos full color (no grayscale)
+// ✓ Announcements moved below FacultyStrip ("Ils Prendront Part")
+// ✓ Rich scroll animations — staggered fade-up, slide-in, scale
+// ✓ Partners carousel full color
+// ============================================================
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
@@ -369,11 +376,12 @@ function isEmbedVideo(url) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// ImgCard — shows full image (contain) inside a fixed box
-// No cropping. Dark background fills the letterbox gaps.
+// ImgCard — single image, batch carousel, or video
+// Batch items (item.urls array) auto-slide like an IG multi-post
 // ─────────────────────────────────────────────────────────────
 function ImgCard({ item, big = false, style = {} }) {
-  const isVideo  = item?.type === "video";
+  const isBatch  = item?.urls && item.urls.length > 1;
+  const isVideo  = item?.type === "video" && !isBatch;
   const label    = item?.caption || item?._label || "";
   const cat      = item?.category || item?._cat  || "";
   const bg       = item?._bg || "#111827";
@@ -381,13 +389,35 @@ function ImgCard({ item, big = false, style = {} }) {
   const isEmbed  = isVideo && isEmbedVideo(item?.url);
   const thumbUrl = isVideo ? getVideoThumb(item?.url) : null;
   const videoRef = useRef(null);
-  const [hovered, setHovered] = useState(false);
+  const [hovered,  setHovered]  = useState(false);
+  const [slideIdx, setSlideIdx] = useState(0);
+
+  // auto-advance batch slides every 3s — ALWAYS running, no hover needed
+  const timerRef = useRef(null);
+  useEffect(() => {
+    if (!isBatch) return;
+    timerRef.current = setInterval(() => {
+      setSlideIdx(i => (i + 1) % item.urls.length);
+    }, 3000);
+    return () => clearInterval(timerRef.current);
+  }, [isBatch, item?.urls?.length]);
+
+  const goSlide = (e, dir) => {
+    e.preventDefault(); e.stopPropagation();
+    clearInterval(timerRef.current);
+    setSlideIdx(i => (i + dir + item.urls.length) % item.urls.length);
+    timerRef.current = setInterval(() => {
+      setSlideIdx(i => (i + 1) % item.urls.length);
+    }, 3000);
+  };
+
+  // current display url
+  const displayUrl = isBatch ? item.urls[slideIdx]?.url : item?.url;
 
   return (
     <Link to="/gallery"
       style={{ display:"block", position:"relative", overflow:"hidden",
-        background:bg, textDecoration:"none", borderRadius:10,
-        ...style }}
+        background:bg, textDecoration:"none", borderRadius:10, ...style }}
       onMouseEnter={() => {
         setHovered(true);
         if (videoRef.current) videoRef.current.play().catch(() => {});
@@ -397,9 +427,20 @@ function ImgCard({ item, big = false, style = {} }) {
         if (videoRef.current) { videoRef.current.pause(); videoRef.current.currentTime = 0; }
       }}>
 
-      {/* ── IMAGE: cover fills the box, zoom on hover ── */}
-      {item?.url && !isVideo && (
-        <img src={item.url} alt={label}
+      {/* ── BATCH: sliding images ── */}
+      {isBatch && item.urls.map((u, i) => (
+        <img key={i} src={u.url} alt={label}
+          style={{ position:"absolute", inset:0, width:"100%", height:"100%",
+            objectFit:"cover",
+            opacity: i === slideIdx ? 1 : 0,
+            transition:"opacity .55s ease, transform .55s ease",
+            transform: hovered ? "scale(1.03)" : "scale(1)" }}
+        />
+      ))}
+
+      {/* ── SINGLE IMAGE ── */}
+      {!isBatch && !isVideo && displayUrl && (
+        <img src={displayUrl} alt={label}
           style={{ position:"absolute", inset:0, width:"100%", height:"100%",
             objectFit:"cover",
             transition:"transform .55s ease",
@@ -407,36 +448,33 @@ function ImgCard({ item, big = false, style = {} }) {
         />
       )}
 
-      {/* ── VIDEO: YouTube/Vimeo — use maxresdefault for best quality ── */}
+      {/* ── VIDEO: YouTube/Vimeo thumbnail ── */}
       {isVideo && isEmbed && (
         <img
           src={thumbUrl || ("https://img.youtube.com/vi/" + (getYouTubeId(item?.url) || "") + "/maxresdefault.jpg")}
           alt={label}
           onError={e => { e.currentTarget.src = "https://img.youtube.com/vi/" + (getYouTubeId(item?.url) || "") + "/hqdefault.jpg"; }}
           style={{ position:"absolute", inset:0, width:"100%", height:"100%",
-            objectFit:"cover",
-            transition:"transform .5s ease",
+            objectFit:"cover", transition:"transform .5s ease",
             transform: hovered ? "scale(1.06)" : "scale(1)" }}
         />
       )}
 
-      {/* ── VIDEO: direct file — hover preview ── */}
+      {/* ── VIDEO: direct file ── */}
       {isVideo && !isEmbed && item?.url && (
         <video ref={videoRef} src={item.url} muted playsInline preload="metadata"
           style={{ position:"absolute", inset:0, width:"100%", height:"100%",
-            objectFit:"cover",
-            transition:"opacity .3s",
-            opacity: hovered ? 0.8 : 1 }}
+            objectFit:"cover", transition:"opacity .3s", opacity: hovered ? 0.8 : 1 }}
         />
       )}
 
-      {/* ── VIDEO: play button ── */}
+      {/* ── VIDEO play button ── */}
       {isVideo && (
         <div style={{ position:"absolute", inset:0, display:"flex",
           alignItems:"center", justifyContent:"center" }}>
           <div style={{ width: big ? 60 : 50, height: big ? 60 : 50,
             borderRadius:"50%",
-            background: hovered ? "rgba(245,124,0,0.92)" : "rgba(0,0,0,0.55)",
+            background: hovered ? "rgba(21,101,192,0.92)" : "rgba(0,0,0,0.55)",
             border:"2px solid rgba(255,255,255,0.4)",
             display:"flex", alignItems:"center", justifyContent:"center",
             transition:"background .25s, transform .25s",
@@ -446,7 +484,54 @@ function ImgCard({ item, big = false, style = {} }) {
         </div>
       )}
 
-      {/* ── VIDEO source badge ── */}
+      {/* ── BATCH: dot indicators + arrows ── */}
+      {isBatch && (
+        <>
+          {/* arrows — shown on hover */}
+          {hovered && slideIdx > 0 && (
+            <button onClick={e => goSlide(e, -1)}
+              style={{ position:"absolute", left:8, top:"50%",
+                transform:"translateY(-50%)", zIndex:3,
+                width:28, height:28, borderRadius:"50%",
+                background:"rgba(255,255,255,0.85)", border:"none",
+                cursor:"pointer", display:"flex", alignItems:"center",
+                justifyContent:"center", padding:0 }}>
+              <ChevronLeft size={15} color="#0A0A0A" />
+            </button>
+          )}
+          {hovered && slideIdx < item.urls.length - 1 && (
+            <button onClick={e => goSlide(e, 1)}
+              style={{ position:"absolute", right:8, top:"50%",
+                transform:"translateY(-50%)", zIndex:3,
+                width:28, height:28, borderRadius:"50%",
+                background:"rgba(255,255,255,0.85)", border:"none",
+                cursor:"pointer", display:"flex", alignItems:"center",
+                justifyContent:"center", padding:0 }}>
+              <ChevronRight size={15} color="#0A0A0A" />
+            </button>
+          )}
+          {/* dot strip at top */}
+          <div style={{ position:"absolute", top:8, left:"50%",
+            transform:"translateX(-50%)", display:"flex", gap:4, zIndex:3 }}>
+            {item.urls.map((_, i) => (
+              <div key={i} style={{ width: i === slideIdx ? 16 : 5, height:5,
+                borderRadius:3, background:"rgba(255,255,255,0.9)",
+                opacity: i === slideIdx ? 1 : 0.5,
+                transition:"width .3s ease",
+                boxShadow:"0 1px 3px rgba(0,0,0,0.3)" }} />
+            ))}
+          </div>
+          {/* count badge top-right */}
+          <div style={{ position:"absolute", top:8, right:10, zIndex:3,
+            background:"rgba(0,0,0,0.55)", borderRadius:3,
+            padding:"2px 7px", fontFamily:"'DM Mono',monospace",
+            fontSize:"0.38rem", color:"#fff", letterSpacing:"0.06em" }}>
+            {slideIdx + 1}/{item.urls.length}
+          </div>
+        </>
+      )}
+
+      {/* ── VIDEO badge ── */}
       {isVideo && (
         <div style={{ position:"absolute", top:9, left:9, zIndex:2,
           background:"rgba(0,0,0,0.72)", borderRadius:3,
@@ -459,12 +544,12 @@ function ImgCard({ item, big = false, style = {} }) {
         </div>
       )}
 
-      {/* ── Subtle dark vignette at bottom for text legibility ── */}
+      {/* ── dark vignette ── */}
       <div style={{ position:"absolute", inset:0, pointerEvents:"none",
         background:"linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.1) 40%, transparent 70%)" }} />
 
-      {/* ── Category pill (top-right) ── */}
-      {cat && (
+      {/* ── Category pill ── */}
+      {cat && !isBatch && (
         <div style={{ position:"absolute", top:10, right:10 }}>
           <span style={{ fontFamily:"'DM Mono',monospace", fontSize:"0.4rem",
             letterSpacing:"0.18em", textTransform:"uppercase",
@@ -478,18 +563,22 @@ function ImgCard({ item, big = false, style = {} }) {
       {/* ── Caption ── */}
       {label && (
         <div style={{ position:"absolute", bottom:0, left:0, right:0,
-          padding: big ? "1.25rem 1rem" : "0.75rem 0.875rem" }}>
+          padding: big ? "1.25rem 1rem" : "0.75rem 0.875rem",
+          background:"linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)" }}>
           <p style={{ fontFamily:"'Fraunces',serif", fontWeight:700,
-            color:"#fff", lineHeight:1.3, margin:0,
-            fontSize: big ? "1.1rem" : "0.8rem",
-            textShadow:"0 1px 4px rgba(0,0,0,0.6)" }}>
-            {label}
+            color:"#fff", lineHeight:1.4, margin:0,
+            fontSize: big ? "1rem" : "0.78rem",
+            textShadow:"0 1px 4px rgba(0,0,0,0.6)",
+            display:"-webkit-box", WebkitLineClamp: big ? 3 : 2,
+            WebkitBoxOrient:"vertical", overflow:"hidden" }}>
+            {label.length > 120 ? label.slice(0, 120) + "…" : label}
           </p>
         </div>
       )}
     </Link>
   );
 }
+
 
 // ══════════════════════════════════════════════════════════════
 export default function Home() {
@@ -535,7 +624,7 @@ export default function Home() {
   useEffect(() => {
     (async () => {
       const [{ data: g }, { data: a }] = await Promise.all([
-        supabase.from("gallery").select("id,url,caption,type,category").order("created_at",{ascending:false}).limit(4),
+        supabase.from("gallery").select("id,url,urls,caption,type,category").order("created_at",{ascending:false}).limit(4),
         supabase.from("announcements").select("id,title,body,author,category,pinned,created_at").order("pinned",{ascending:false}).order("created_at",{ascending:false}).limit(3),
       ]);
       if (g) setGallery(g);
@@ -905,7 +994,7 @@ export default function Home() {
               <span className="live" style={{ width:8, height:8, borderRadius:"50%",
                 background:"#F57C00", display:"inline-block" }} />
               <span className="ff-b" style={{ fontSize:"1.35rem", letterSpacing:"0.06em" }}>
-                Moments Forts <span style={{color:"#1565C0"}}>STUD 2026</span>
+                Moments en <span style={{color:"#1565C0"}}>Images</span>
               </span>
             </div>
             <div style={{ display:"flex", gap:"0.5rem", flexWrap:"wrap" }}>

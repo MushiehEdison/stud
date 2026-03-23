@@ -256,7 +256,7 @@ export default function AdminPanel() {
   const [tab,setTab]=useState("gallery");
   const [gallery,setGallery]=useState([]), [gLoading,setGLoading]=useState(false);
   const [gForm,setGForm]=useState({url:"",caption:"",category:"Cérémonie",type:"image"});
-  const [gUploading,setGUploading]=useState(false), [gFile,setGFile]=useState(null), [gSuccess,setGSuccess]=useState(false), [gShow,setGShow]=useState(false);
+  const [gUploading,setGUploading]=useState(false), [gFile,setGFile]=useState(null), [gFiles,setGFiles]=useState([]), [gUploadProgress,setGUploadProgress]=useState(0), [gSuccess,setGSuccess]=useState(false), [gShow,setGShow]=useState(false);
   const [anns,setAnns]=useState([]), [aLoading,setALoading]=useState(false);
   const [aForm,setAForm]=useState({title:"",body:"",author:"Comité Organisateur",category:"Général",pinned:false});
   const [aSuccess,setASuccess]=useState(false), [aShow,setAShow]=useState(false);
@@ -270,14 +270,54 @@ export default function AdminPanel() {
   function handleLogout(){sessionStorage.removeItem("stud_admin");setAuthed(false);setPw("");}
 
   async function fetchGallery(){setGLoading(true);var r=await supabase.from("gallery").select("*").order("created_at",{ascending:false});setGallery(r.data||[]);setGLoading(false);}
+
+  async function uploadFile(file) {
+    var ext=file.name.split(".").pop(), path=Date.now()+"_"+Math.random().toString(36).slice(2)+"."+ext;
+    var up=await supabase.storage.from("gallery-media").upload(path,file,{cacheControl:"3600",upsert:false});
+    if(up.error) throw new Error(up.error.message);
+    return {url:supabase.storage.from("gallery-media").getPublicUrl(path).data.publicUrl, type:file.type.startsWith("video")?"video":"image"};
+  }
+
   async function handleGallerySubmit(){
-    var url=gForm.url.trim();
-    if(gFile){setGUploading(true);var ext=gFile.name.split(".").pop(),path=Date.now()+"."+ext,up=await supabase.storage.from("gallery-media").upload(path,gFile,{cacheControl:"3600",upsert:false});
-      if(up.error){alert("Erreur: "+up.error.message);setGUploading(false);return;}url=supabase.storage.from("gallery-media").getPublicUrl(path).data.publicUrl;setGUploading(false);}
-    if(!url) return;
-    var ins=await supabase.from("gallery").insert({url,caption:gForm.caption.trim()||null,category:gForm.category,type:gFile?(gFile.type.startsWith("video")?"video":"image"):gForm.type});
-    if(!ins.error){setGForm({url:"",caption:"",category:"Cérémonie",type:"image"});setGFile(null);setGSuccess(true);setGShow(false);setTimeout(function(){setGSuccess(false);},2500);fetchGallery();}
-    else alert("Erreur: "+ins.error.message);
+    setGUploading(true); setGUploadProgress(0);
+    try {
+      // ── BATCH: multiple images ──
+      if(gFiles.length>1){
+        var uploaded=[];
+        for(var i=0;i<gFiles.length;i++){
+          var res=await uploadFile(gFiles[i]);
+          uploaded.push(res);
+          setGUploadProgress(i+1);
+        }
+        // insert single gallery row with urls array
+        var ins=await supabase.from("gallery").insert({
+          url:uploaded[0].url, // first image as cover
+          urls:uploaded,       // full batch
+          caption:gForm.caption.trim()||null,
+          category:gForm.category,
+          type:"image",
+          likes:0,
+        });
+        if(ins.error) throw new Error(ins.error.message);
+      }
+      // ── SINGLE file ──
+      else if(gFile||gFiles.length===1){
+        var f=gFile||gFiles[0];
+        var r=await uploadFile(f);
+        var ins2=await supabase.from("gallery").insert({url:r.url,caption:gForm.caption.trim()||null,category:gForm.category,type:r.type,likes:0});
+        if(ins2.error) throw new Error(ins2.error.message);
+      }
+      // ── URL ──
+      else {
+        var url=gForm.url.trim(); if(!url) return;
+        var ins3=await supabase.from("gallery").insert({url,caption:gForm.caption.trim()||null,category:gForm.category,type:gForm.type,likes:0});
+        if(ins3.error) throw new Error(ins3.error.message);
+      }
+      setGForm({url:"",caption:"",category:"Cérémonie",type:"image"});
+      setGFile(null); setGFiles([]); setGSuccess(true); setGShow(false);
+      setTimeout(function(){setGSuccess(false);},2500); fetchGallery();
+    } catch(e){ alert("Erreur: "+e.message); }
+    finally{ setGUploading(false); setGUploadProgress(0); }
   }
   async function handleGalleryDelete(id){if(!confirm("Supprimer ?"))return;await supabase.from("gallery").delete().eq("id",id);fetchGallery();}
 
@@ -412,52 +452,133 @@ export default function AdminPanel() {
                 <ImagePlus size={14}/>{gShow?"Annuler":"Ajouter"}
               </button>
             </div>
+
             {gShow&&(
               <div style={{background:WHT,borderRadius:12,border:"1px solid "+BDR,padding:"1.25rem",marginBottom:"1rem"}}>
                 <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"1rem",letterSpacing:"0.06em",marginBottom:"1rem"}}>Nouveau média</div>
                 <div style={{display:"flex",flexDirection:"column",gap:"0.875rem"}}>
+
+                  {/* type toggle */}
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,background:"#F4F6F9",borderRadius:8,padding:4}}>
                     {["image","video"].map(function(t){var a=gForm.type===t;return(
-                      <button key={t} onClick={function(){setGForm(function(f){return Object.assign({},f,{type:t});});}} style={{padding:"0.55rem",border:"none",cursor:"pointer",background:a?WHT:"transparent",color:a?B:GRY,borderRadius:6,fontFamily:"'DM Mono',monospace",fontSize:"0.56rem",letterSpacing:"0.1em",textTransform:"uppercase",transition:"all .15s",boxShadow:a?"0 1px 4px rgba(0,0,0,0.1)":"none"}}>
+                      <button key={t} onClick={function(){setGForm(function(f){return Object.assign({},f,{type:t});});setGFiles([]);setGFile(null);}} style={{padding:"0.55rem",border:"none",cursor:"pointer",background:a?WHT:"transparent",color:a?B:GRY,borderRadius:6,fontFamily:"'DM Mono',monospace",fontSize:"0.56rem",letterSpacing:"0.1em",textTransform:"uppercase",transition:"all .15s",boxShadow:a?"0 1px 4px rgba(0,0,0,0.1)":"none"}}>
                         {t==="image"?"Image":"Vidéo"}
                       </button>);})}
                   </div>
+
+                  {/* file upload — multi for images, single for video */}
                   <div>
-                    <label style={lbl}>Uploader un fichier</label>
-                    <label style={{display:"flex",alignItems:"center",gap:"0.75rem",padding:"0.875rem 1rem",border:"1.5px dashed "+BDR,borderRadius:8,cursor:"pointer",background:gFile?"#F0FFF4":"#FAFAFA"}}>
+                    <label style={lbl}>{gForm.type==="image"?"Uploader image(s) — sélection multiple possible":"Uploader une vidéo"}</label>
+                    <label style={{display:"flex",alignItems:"center",gap:"0.75rem",padding:"0.875rem 1rem",border:"1.5px dashed "+BDR,borderRadius:8,cursor:"pointer",background:(gFiles.length>0||gFile)?"#F0FFF4":"#FAFAFA"}}>
                       <Upload size={15} color={GRY}/>
-                      <span style={{fontFamily:"'DM Mono',monospace",fontSize:"0.56rem",color:gFile?"#2E7D32":GRY}}>{gFile?gFile.name:"Cliquez pour choisir"}</span>
-                      <input type="file" accept={gForm.type==="image"?"image/*":"video/*"} onChange={function(e){setGFile(e.target.files[0]);setGForm(function(f){return Object.assign({},f,{url:""});});}} style={{display:"none"}}/>
-                      {gFile&&<button onClick={function(e){e.preventDefault();setGFile(null);}} style={{marginLeft:"auto",background:"none",border:"none",cursor:"pointer",padding:0}}><X size={14} color={GRY}/></button>}
+                      <span style={{fontFamily:"'DM Mono',monospace",fontSize:"0.56rem",color:(gFiles.length>0||gFile)?"#2E7D32":GRY}}>
+                        {gFiles.length>1?(gFiles.length+" images sélectionnées"):gFiles.length===1?gFiles[0].name:gFile?gFile.name:gForm.type==="image"?"Cliquez pour choisir (multi-sélection OK)":"Cliquez pour choisir"}
+                      </span>
+                      <input type="file" multiple={gForm.type==="image"}
+                        accept={gForm.type==="image"?"image/*":"video/*"}
+                        onChange={function(e){
+                          if(gForm.type==="image"){
+                            setGFiles(Array.from(e.target.files));setGFile(null);
+                          } else {
+                            setGFile(e.target.files[0]);setGFiles([]);
+                          }
+                          setGForm(function(f){return Object.assign({},f,{url:"",previewUrl:null});});
+                        }} style={{display:"none"}}/>
+                      {(gFiles.length>0||gFile)&&<button onClick={function(e){e.preventDefault();setGFiles([]);setGFile(null);}} style={{marginLeft:"auto",background:"none",border:"none",cursor:"pointer",padding:0}}><X size={14} color={GRY}/></button>}
                     </label>
                   </div>
+
+                  {/* PREVIEW — images grid */}
+                  {gFiles.length>0&&(
+                    <div>
+                      <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.48rem",letterSpacing:"0.12em",textTransform:"uppercase",color:GRY,marginBottom:"0.5rem"}}>
+                        Aperçu — {gFiles.length} image{gFiles.length>1?"s":""} {gFiles.length>1?"(batch carousel)":""}
+                      </div>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(80px,1fr))",gap:6}}>
+                        {gFiles.map(function(f,i){
+                          var url=URL.createObjectURL(f);
+                          return(
+                            <div key={i} style={{position:"relative",aspectRatio:"1",borderRadius:6,overflow:"hidden",border:"1px solid "+BDR}}>
+                              <img src={url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                              {gFiles.length>1&&i===0&&(
+                                <div style={{position:"absolute",bottom:2,right:2,background:"rgba(21,101,192,0.85)",borderRadius:3,padding:"1px 4px",fontFamily:"'DM Mono',monospace",fontSize:"0.36rem",color:"#fff"}}>1/{gFiles.length}</div>
+                              )}
+                            </div>);
+                        })}
+                      </div>
+                      {gFiles.length>1&&(
+                        <div style={{marginTop:"0.5rem",padding:"0.5rem 0.75rem",background:BLT,border:"1px solid #BBDEFB",borderRadius:6,display:"flex",alignItems:"center",gap:"0.5rem"}}>
+                          <span style={{fontSize:"0.9rem"}}>📸</span>
+                          <span style={{fontFamily:"'DM Mono',monospace",fontSize:"0.5rem",color:B}}>
+                            Ces {gFiles.length} images seront publiées comme un carousel
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* PREVIEW — single video */}
+                  {gFile&&gForm.type==="video"&&(
+                    <div>
+                      <div style={{fontFamily:"'DM Mono',monospace",fontSize:"0.48rem",letterSpacing:"0.12em",textTransform:"uppercase",color:GRY,marginBottom:"0.5rem"}}>Aperçu vidéo</div>
+                      <video src={URL.createObjectURL(gFile)} controls muted style={{width:"100%",maxHeight:200,borderRadius:8,background:"#000"}}/>
+                    </div>
+                  )}
+
+                  {/* divider */}
                   <div style={{display:"flex",alignItems:"center",gap:"0.5rem"}}><div style={{flex:1,height:1,background:BDR}}/><span style={{fontFamily:"'DM Mono',monospace",fontSize:"0.5rem",color:GRY}}>OU</span><div style={{flex:1,height:1,background:BDR}}/></div>
+
+                  {/* url */}
                   <div>
                     <label style={lbl}>URL (YouTube, Vimeo, directe)</label>
-                    <input value={gForm.url} onChange={function(e){setGForm(function(f){return Object.assign({},f,{url:e.target.value});});setGFile(null);}} placeholder="https://..." disabled={!!gFile} style={Object.assign({},inp,{opacity:gFile?0.5:1})} onFocus={function(e){e.target.style.borderColor=B;}} onBlur={function(e){e.target.style.borderColor=BDR;}}/>
-                    {(gForm.url.includes("youtube")||gForm.url.includes("youtu.be")||gForm.url.includes("vimeo"))&&!gFile&&(
+                    <input value={gForm.url} onChange={function(e){setGForm(function(f){return Object.assign({},f,{url:e.target.value});});setGFile(null);setGFiles([]);}} placeholder="https://..." disabled={!!(gFile||gFiles.length)} style={Object.assign({},inp,{opacity:(gFile||gFiles.length)?0.5:1})} onFocus={function(e){e.target.style.borderColor=B;}} onBlur={function(e){e.target.style.borderColor=BDR;}}/>
+                    {(gForm.url.includes("youtube")||gForm.url.includes("youtu.be")||gForm.url.includes("vimeo"))&&!gFile&&!gFiles.length&&(
                       <div style={{marginTop:"0.4rem",padding:"0.5rem 0.75rem",background:BLT,border:"1px solid #BBDEFB",borderRadius:6,display:"flex",alignItems:"center",gap:"0.5rem"}}>
                         <CheckCircle size={13} color={B}/><span style={{fontFamily:"'DM Mono',monospace",fontSize:"0.5rem",color:B}}>Lien embed détecté</span>
                       </div>
                     )}
+                    {/* URL preview */}
+                    {gForm.url.trim()&&!gForm.url.includes("youtube")&&!gForm.url.includes("youtu.be")&&!gForm.url.includes("vimeo")&&!gFile&&!gFiles.length&&(
+                      <img src={gForm.url} alt="" onError={function(e){e.currentTarget.style.display="none";}} style={{marginTop:"0.5rem",width:"100%",maxHeight:160,objectFit:"cover",borderRadius:8,border:"1px solid "+BDR}}/>
+                    )}
                   </div>
+
                   <div><label style={lbl}>Légende</label><input value={gForm.caption} onChange={function(e){setGForm(function(f){return Object.assign({},f,{caption:e.target.value});});}} placeholder="Décrivez ce moment..." style={inp} onFocus={function(e){e.target.style.borderColor=B;}} onBlur={function(e){e.target.style.borderColor=BDR;}}/></div>
                   <div><label style={lbl}>Catégorie</label><select value={gForm.category} onChange={function(e){setGForm(function(f){return Object.assign({},f,{category:e.target.value});});}} style={Object.assign({},inp,{cursor:"pointer"})}>{GALLERY_CATS.map(function(c){return <option key={c}>{c}</option>;})}</select></div>
-                  <button onClick={handleGallerySubmit} disabled={!gFile&&!gForm.url.trim()} style={{padding:"0.875rem",borderRadius:8,border:"none",background:(!gFile&&!gForm.url.trim())?BDR:B,color:(!gFile&&!gForm.url.trim())?GRY:"#fff",cursor:(!gFile&&!gForm.url.trim())?"not-allowed":"pointer",fontFamily:"'DM Mono',monospace",fontSize:"0.62rem",letterSpacing:"0.1em",textTransform:"uppercase",transition:"all .2s"}}>
-                    {gUploading?"Upload...":gSuccess?"Publié !":"Publier le média"}
+
+                  <button onClick={handleGallerySubmit} disabled={!gFile&&!gFiles.length&&!gForm.url.trim()||gUploading}
+                    style={{padding:"0.875rem",borderRadius:8,border:"none",background:(!gFile&&!gFiles.length&&!gForm.url.trim())||gUploading?BDR:B,color:(!gFile&&!gFiles.length&&!gForm.url.trim())||gUploading?GRY:"#fff",cursor:(!gFile&&!gFiles.length&&!gForm.url.trim())||gUploading?"not-allowed":"pointer",fontFamily:"'DM Mono',monospace",fontSize:"0.62rem",letterSpacing:"0.1em",textTransform:"uppercase",transition:"all .2s"}}>
+                    {gUploading?"Upload en cours..."+" ("+gUploadProgress+"/"+(gFiles.length||1)+")":gSuccess?"Publié !":"Publier"}
                   </button>
                 </div>
               </div>
             )}
+
             <div style={{display:"flex",flexDirection:"column",gap:"0.5rem"}}>
-              {gLoading?<Loader/>:gallery.length===0?<Empty text="Aucun média publié."/>:gallery.map(function(item){return(
+              {gLoading?<Loader/>:gallery.length===0?<Empty text="Aucun média publié."/>:gallery.map(function(item){
+                var isBatch=item.urls&&item.urls.length>1;
+                return(
                 <div key={item.id} style={{background:WHT,borderRadius:10,border:"1px solid "+BDR,display:"flex",gap:"0.875rem",padding:"0.875rem",alignItems:"flex-start"}}>
-                  <div style={{width:64,height:48,flexShrink:0,borderRadius:6,overflow:"hidden",background:BG}}>
-                    {item.type==="video"?<div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",background:"#0D1B2A",color:"rgba(255,255,255,0.5)",fontFamily:"'DM Mono',monospace",fontSize:"0.42rem"}}>VIDEO</div>:<img src={item.url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>}
+                  {/* thumbnail */}
+                  <div style={{width:64,height:48,flexShrink:0,borderRadius:6,overflow:"hidden",background:BG,position:"relative"}}>
+                    {isBatch?(
+                      <>
+                        <img src={item.urls[0].url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                        <div style={{position:"absolute",bottom:2,right:2,background:"rgba(21,101,192,0.85)",borderRadius:3,padding:"1px 4px",fontFamily:"'DM Mono',monospace",fontSize:"0.36rem",color:"#fff"}}>{item.urls.length}</div>
+                      </>
+                    ):item.type==="video"?(
+                      <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",background:"#0D1B2A",color:"rgba(255,255,255,0.5)",fontFamily:"'DM Mono',monospace",fontSize:"0.42rem"}}>VIDEO</div>
+                    ):(
+                      <img src={item.url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                    )}
                   </div>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontFamily:"'Fraunces',serif",fontSize:"0.82rem",color:INK,marginBottom:"0.3rem",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.caption||<span style={{color:GRY,fontStyle:"italic"}}>Sans légende</span>}</div>
-                    <div style={{display:"flex",gap:"0.4rem",alignItems:"center"}}><Tag text={item.category}/><span style={{fontFamily:"'DM Mono',monospace",fontSize:"0.44rem",color:GRY}}>{timeAgo(item.created_at)}</span></div>
+                    <div style={{display:"flex",gap:"0.4rem",alignItems:"center",flexWrap:"wrap"}}>
+                      <Tag text={item.category}/>
+                      {isBatch&&<Tag text={item.urls.length+" photos"} color="#2E7D32"/>}
+                      <span style={{fontFamily:"'DM Mono',monospace",fontSize:"0.44rem",color:GRY}}>{timeAgo(item.created_at)}</span>
+                    </div>
                   </div>
                   <DelBtn onClick={function(){handleGalleryDelete(item.id);}}/>
                 </div>);})}

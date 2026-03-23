@@ -156,6 +156,96 @@ function VideoCard({ item, onClick }) {
   );
 }
 
+// ── Batch carousel card ───────────────────────────────────────
+function BatchCarouselCard({ item, onClick }) {
+  const [idx,     setIdx]     = useState(0);
+  const [hovered, setHovered] = useState(false);
+  const timerRef              = useRef(null);
+  const urls                  = item.urls || [];
+
+  // auto-advance every 3s
+  useEffect(() => {
+    timerRef.current = setInterval(() => {
+      setIdx(i => (i + 1) % urls.length);
+    }, 3000);
+    return () => clearInterval(timerRef.current);
+  }, [urls.length]);
+
+  const go = (e, dir) => {
+    e.stopPropagation();
+    clearInterval(timerRef.current);
+    setIdx(i => (i + dir + urls.length) % urls.length);
+    timerRef.current = setInterval(() => {
+      setIdx(i => (i + 1) % urls.length);
+    }, 3000);
+  };
+
+  return (
+    <div
+      style={{ position:"relative", cursor:"pointer", overflow:"hidden",
+        aspectRatio:"1/1", background:"#111" }}
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}>
+
+      {/* slides */}
+      {urls.map((u, i) => (
+        <img key={i} src={u.url} alt=""
+          style={{ position:"absolute", inset:0, width:"100%", height:"100%",
+            objectFit:"cover",
+            opacity: i === idx ? 1 : 0,
+            transition:"opacity .55s ease, transform .55s ease",
+            transform: hovered ? "scale(1.04)" : "scale(1)" }} />
+      ))}
+
+      {/* dot strip */}
+      <div style={{ position:"absolute", bottom:8, left:"50%",
+        transform:"translateX(-50%)", display:"flex", gap:4, zIndex:3 }}>
+        {urls.map((_, i) => (
+          <div key={i} onClick={e => { e.stopPropagation(); setIdx(i); }}
+            style={{ width: i === idx ? 16 : 5, height:5, borderRadius:3,
+              background:"rgba(255,255,255,0.9)",
+              opacity: i === idx ? 1 : 0.5,
+              transition:"width .3s ease", cursor:"pointer",
+              boxShadow:"0 1px 3px rgba(0,0,0,0.3)" }} />
+        ))}
+      </div>
+
+      {/* prev/next arrows on hover */}
+      {hovered && idx > 0 && (
+        <button onClick={e => go(e, -1)}
+          style={{ position:"absolute", left:8, top:"50%",
+            transform:"translateY(-50%)", zIndex:4,
+            width:28, height:28, borderRadius:"50%",
+            background:"rgba(255,255,255,0.85)", border:"none",
+            cursor:"pointer", display:"flex", alignItems:"center",
+            justifyContent:"center", padding:0 }}>
+          <ChevronLeft size={14} color="#0A0A0A" />
+        </button>
+      )}
+      {hovered && idx < urls.length - 1 && (
+        <button onClick={e => go(e, 1)}
+          style={{ position:"absolute", right:8, top:"50%",
+            transform:"translateY(-50%)", zIndex:4,
+            width:28, height:28, borderRadius:"50%",
+            background:"rgba(255,255,255,0.85)", border:"none",
+            cursor:"pointer", display:"flex", alignItems:"center",
+            justifyContent:"center", padding:0 }}>
+          <ChevronRight size={14} color="#0A0A0A" />
+        </button>
+      )}
+
+      {/* count badge */}
+      <div style={{ position:"absolute", top:8, right:8, zIndex:3,
+        background:"rgba(0,0,0,0.6)", borderRadius:3,
+        padding:"2px 7px", fontFamily:"'DM Mono',monospace",
+        fontSize:"0.4rem", color:"#fff", letterSpacing:"0.06em" }}>
+        {"📸 " + (idx+1) + "/" + urls.length}
+      </div>
+    </div>
+  );
+}
+
 // ── Lightbox ──────────────────────────────────────────────────
 function Lightbox({ items, startIdx, onClose }) {
   const [idx, setIdx]     = useState(startIdx);
@@ -365,7 +455,15 @@ export default function Gallery() {
       .from("gallery")
       .select("*")
       .order("created_at", { ascending:false });
+
+    // Keep batch items as single cards (carousel rendered inside)
     setItems(data || []);
+
+    if (data) {
+      const dbLikes = {};
+      data.forEach(item => { if (item.likes) dbLikes[item.id] = item.likes; });
+      setLikes(prev => ({ ...dbLikes, ...prev }));
+    }
     setLoading(false);
   }
 
@@ -377,13 +475,45 @@ export default function Gallery() {
   const counts = {};
   items.forEach(i => { counts[i.category] = (counts[i.category] || 0) + 1; });
 
-  const handleLike = (id, e) => {
+  const handleLike = async (id, e) => {
     e.stopPropagation();
+    // Build a fingerprint from browser info (stored in localStorage)
+    let fp = localStorage.getItem("stud_fp");
+    if (!fp) {
+      fp = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      localStorage.setItem("stud_fp", fp);
+    }
+    // Already liked this item?
+    const likedKey = "liked_" + id;
+    if (localStorage.getItem(likedKey)) return; // silently ignore
+    // Optimistic update
     setLikes(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+    // Call DB RPC
+    const { data } = await supabase.rpc("like_gallery_item", {
+      p_item_id: id, p_fingerprint: fp
+    });
+    if (data?.already_liked) {
+      // Roll back optimistic update
+      setLikes(prev => ({ ...prev, [id]: Math.max(0, (prev[id] || 1) - 1) }));
+    } else if (data?.success) {
+      localStorage.setItem(likedKey, "1");
+      setLikes(prev => ({ ...prev, [id]: data.likes }));
+    }
   };
 
+  // For lightbox: expand batch items so you can swipe through all photos
+  const lightboxItems = filtered.reduce((acc, item) => {
+    if (item.urls && item.urls.length > 1) {
+      item.urls.forEach(u => acc.push({ ...item, url:u.url, type:u.type||"image" }));
+    } else {
+      acc.push(item);
+    }
+    return acc;
+  }, []);
+
   const openLightbox = (item) => {
-    const idx = filtered.findIndex(i => i.id === item.id);
+    // find first image of this item in lightboxItems
+    const idx = lightboxItems.findIndex(i => i.id === item.id);
     setLightbox(idx >= 0 ? idx : 0);
   };
 
@@ -543,7 +673,8 @@ export default function Gallery() {
         ) : (
           <div className="gallery-masonry">
             {filtered.map((item, i) => {
-              const isVideo   = item.type === "video";
+              const isBatch   = item.urls && item.urls.length > 1;
+              const isVideo   = item.type === "video" && !isBatch;
               const catColor  = CAT_COLORS[item.category] || "#1565C0";
               const likeCount = likes[item.id] || 0;
               return (
@@ -553,7 +684,9 @@ export default function Gallery() {
                   {/* media */}
                   <div style={{ cursor:"pointer" }}
                     onClick={() => openLightbox(item)}>
-                    {isVideo
+                    {isBatch
+                      ? <BatchCarouselCard item={item} onClick={() => openLightbox(item)} />
+                      : isVideo
                       ? <VideoCard item={item} onClick={() => openLightbox(item)} />
                       : (
                         <div style={{ overflow:"hidden", position:"relative" }}>
@@ -592,6 +725,16 @@ export default function Gallery() {
                             padding:"2px 7px", borderRadius:2 }}>
                             {item.category}
                           </span>
+                          {isBatch && (
+                            <span style={{ fontFamily:"'DM Mono',monospace",
+                              fontSize:"0.42rem", letterSpacing:"0.08em",
+                              textTransform:"uppercase",
+                              background:"#E8F5E9", color:"#2E7D32",
+                              padding:"2px 6px", borderRadius:2 }}>
+                              📸 {item.urls.length} photos
+                            </span>
+                          )}
+
                           <span style={{ fontFamily:"'DM Mono',monospace",
                             fontSize:"0.44rem", color:"#aaa" }}>
                             {timeAgo(item.created_at)}
@@ -630,7 +773,7 @@ export default function Gallery() {
       {/* ── LIGHTBOX ── */}
       {lightbox !== null && (
         <Lightbox
-          items={filtered}
+          items={lightboxItems}
           startIdx={lightbox}
           onClose={() => setLightbox(null)}
         />
