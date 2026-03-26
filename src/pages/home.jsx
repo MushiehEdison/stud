@@ -834,7 +834,7 @@ const featuredEvents = [
             </h1>
           </div>
 
-          <div className="ld2 hide-sm" style={{ flexShrink:0, paddingLeft:"1.75rem",
+          <div className="ld2" style={{ flexShrink:0, paddingLeft:"1.75rem",
             borderLeft:S.rule }}>
             <div className="ff-m" style={{ fontSize:"0.42rem", letterSpacing:"0.2em",
               textTransform:"uppercase", color:"#88887F", marginBottom:3 }}>
@@ -844,7 +844,7 @@ const featuredEvents = [
           </div>
           {/* after the Countdown div, still inside the ibar flex container */}
 {visitorCount !== null && (
-  <div className="ld3 hide-sm" style={{
+  <div className="ld3 " style={{
     flexShrink: 0, paddingLeft: "1.75rem", borderLeft: S.rule,
     display: "flex", flexDirection: "column", gap: 3,
   }}>
