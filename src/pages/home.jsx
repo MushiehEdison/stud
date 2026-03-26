@@ -1,9 +1,9 @@
 // ============================================================
-// home.jsx — v5
-// ✓ Partner logos full color (no grayscale)
-// ✓ Announcements moved below FacultyStrip ("Ils Prendront Part")
-// ✓ Rich scroll animations — staggered fade-up, slide-in, scale
-// ✓ Partners carousel full color
+// home.jsx — v6
+// ✓ Feed grid: AnnouncementsCard → ActualitésCard (rebranded)
+// ✓ Feed grid: PartnersCarousel → ÉtablissementsCard (faculty images)
+// ✓ FacultyStrip (scrolling logo marquee) removed
+// ✓ "Dernières Annonces" full section removed
 // ============================================================
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -17,7 +17,6 @@ import Countdown from "../components/countdown";
 import { supabase } from "../lib/superbase";
 import { useVisitorTracker, fetchTotalVisitors } from "../lib/useVisitorTracker";
 import { TestimonialsCarousel, FeedbackFAB } from "../components/TestimonialsWidget";
-import FacultyStrip from "../components/FacultyStrip";
 import illuCohesion    from "../assets/icon-cohesion.svg";
 import illuExcellence  from "../assets/icon-trophy.svg";
 import illuCelebration from "../assets/icon-celebration.svg";
@@ -29,6 +28,16 @@ import logoTotal   from "../assets/total.png";
 import logoBossion from "../assets/bdc.webp";
 import logoOrange  from "../assets/orange.webp";
 
+// ── local logo imports ────────────────────────────────────
+import logoFSEGA  from "../assets/eco.png";
+import logoENSET  from "../assets/enset.png";
+import logoESSEC  from "../assets/essec.png";
+import logoFDS    from "../assets/fds.png";
+import logoIBA    from "../assets/iba.png";
+import logoISH    from "../assets/ish.png";
+import logoIUT    from "../assets/iut.png";
+import logoFLSH   from "../assets/letter.png";
+
 const OBJ_ILLUSTRATIONS = [illuCohesion, illuExcellence, illuCelebration, illuSolidarity];
 
 const PARTNERS = [
@@ -37,6 +46,18 @@ const PARTNERS = [
   { name: "Total Energies",          short: "TOTAL",  logo: logoTotal   },
   { name: "Brasseries du Cameroun",  short: "BDC",    logo: logoBossion },
   { name: "Orange Cameroun",         short: "ORANGE", logo: logoOrange  },
+];
+
+// Établissements de l'Université de Douala
+const ETABLISSEMENTS = [
+  { name: "FSEGA", full: "Faculté des Sciences Économiques et de Gestion Appliquée",  img: logoFSEGA },
+  { name: "ENSET", full: "École Normale Supérieure de l'Enseignement Technique",      img: logoENSET },
+  { name: "ESSEC", full: "École Supérieure des Sciences Économiques et Commerciales", img: logoESSEC },
+  { name: "FDS",   full: "Faculté de Droit et de Science Politique",                  img: logoFDS   },
+  { name: "IBA",   full: "Institut de la Baie de Bonanjo en Administration",          img: logoIBA   },
+  { name: "ISH",   full: "Institut des Sciences de l'Homme",                          img: logoISH   },
+  { name: "IUT",   full: "Institut Universitaire de Technologie",                     img: logoIUT   },
+  { name: "FLSH",  full: "Faculté des Lettres et Sciences Humaines",                  img: logoFLSH  },
 ];
 
 const CAT_COLORS = { Général:"#1565C0", Sport:"#F57C00", Culture:"#F9A825", Logistique:"#6B7280" };
@@ -49,9 +70,8 @@ const FEED_PLACEHOLDERS = [
 ];
 
 // ─────────────────────────────────────────────────────────────
-// useInView — fires once when element enters viewport
+// useWindowWidth
 // ─────────────────────────────────────────────────────────────
-// Tracks window width for responsive layout switching
 function useWindowWidth() {
   const [width, setWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 1200
@@ -78,10 +98,6 @@ function useInView(threshold = 0.1) {
   return [ref, visible];
 }
 
-// ─────────────────────────────────────────────────────────────
-// useStagger — animate children one by one on scroll
-// Returns a ref to attach to the parent container
-// ─────────────────────────────────────────────────────────────
 function useStagger(threshold = 0.07) {
   const ref = useRef(null);
   useEffect(() => {
@@ -107,9 +123,6 @@ function useStagger(threshold = 0.07) {
   return ref;
 }
 
-// ─────────────────────────────────────────────────────────────
-// Reveal — wraps any block with a scroll-triggered fade-up
-// ─────────────────────────────────────────────────────────────
 function Reveal({ children, delay = 0, from = "bottom", style = {}, className = "" }) {
   const ref = useRef(null);
   useEffect(() => {
@@ -135,9 +148,6 @@ function Reveal({ children, delay = 0, from = "bottom", style = {}, className = 
   return <div ref={ref} style={style} className={className}>{children}</div>;
 }
 
-// ─────────────────────────────────────────────────────────────
-// Counter
-// ─────────────────────────────────────────────────────────────
 function Counter({ target }) {
   const [n, setN] = useState(0);
   const [ref, v] = useInView(0.3);
@@ -155,94 +165,10 @@ function Counter({ target }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// PartnersCarouselCard — full color logos, auto-cycle
+// ActualitésCard — rebranded announcements card (was AnnouncementsCard)
+// Shows latest announcements under the label "Les Actualités"
 // ─────────────────────────────────────────────────────────────
-function PartnersCarouselCard() {
-  const [idx, setIdx] = useState(0);
-  const [fading, setFading] = useState(false);
-
-  const goTo = useCallback((next) => {
-    setFading(true);
-    setTimeout(() => { setIdx(next); setFading(false); }, 300);
-  }, []);
-
-  useEffect(() => {
-    const t = setInterval(() => goTo((idx + 1) % PARTNERS.length), 2600);
-    return () => clearInterval(t);
-  }, [idx, goTo]);
-
-  const p = PARTNERS[idx];
-
-  return (
-    <div style={{
-      position:"relative", background:"#fff",
-      borderRadius:10, overflow:"hidden",
-      display:"flex", flexDirection:"column",
-      alignItems:"center", justifyContent:"center",
-      padding:"1.5rem 1rem", gap:"0.9rem",
-      border:"1px solid rgba(10,10,10,.07)",
-      boxShadow:"0 1px 6px rgba(0,0,0,.04)",
-    }}>
-      {/* top label */}
-      <div style={{ position:"absolute", top:10, left:12, fontFamily:"'DM Mono',monospace",
-        fontSize:"0.4rem", letterSpacing:"0.22em", textTransform:"uppercase", color:"#aaa" }}>
-        Partenaires Officiels
-      </div>
-
-      {/* logo — full color */}
-      <div style={{ transition:"opacity .3s ease", opacity: fading ? 0 : 1,
-        display:"flex", alignItems:"center", justifyContent:"center", height:64 }}>
-        <img src={p.logo} alt={p.name}
-          style={{ maxHeight:64, maxWidth:140, objectFit:"contain" }}
-          onError={e => {
-            e.target.style.display = "none";
-            e.target.nextSibling.style.display = "flex";
-          }}
-        />
-        <div style={{ display:"none", fontFamily:"'Bebas Neue',sans-serif",
-          fontSize:"1.6rem", color:"#1565C0", letterSpacing:"0.06em" }}>
-          {p.short}
-        </div>
-      </div>
-
-      {/* name */}
-      <div style={{ transition:"opacity .3s ease", opacity: fading ? 0 : 1,
-        fontFamily:"'DM Mono',monospace", fontSize:"0.46rem", letterSpacing:"0.12em",
-        color:"#88887F", textAlign:"center", textTransform:"uppercase" }}>
-        {p.name}
-      </div>
-
-      {/* dots */}
-      <div style={{ display:"flex", gap:5, alignItems:"center" }}>
-        {PARTNERS.map((_,i) => (
-          <button key={i} onClick={() => goTo(i)}
-            style={{ width: i===idx?16:5, height:5, borderRadius:3, border:"none", cursor:"pointer", padding:0,
-              background: i===idx?"#1565C0":"#e0e0e0",
-              transition:"width .3s ease, background .3s ease" }} />
-        ))}
-      </div>
-
-      {/* arrows */}
-      <button onClick={() => goTo((idx-1+PARTNERS.length)%PARTNERS.length)}
-        style={{ position:"absolute", left:6, top:"50%", transform:"translateY(-50%)",
-          background:"rgba(0,0,0,.04)", border:"none", borderRadius:4, padding:"3px 5px",
-          cursor:"pointer", color:"#aaa", display:"flex", alignItems:"center", lineHeight:1 }}>
-        <ChevronLeft size={13} />
-      </button>
-      <button onClick={() => goTo((idx+1)%PARTNERS.length)}
-        style={{ position:"absolute", right:6, top:"50%", transform:"translateY(-50%)",
-          background:"rgba(0,0,0,.04)", border:"none", borderRadius:4, padding:"3px 5px",
-          cursor:"pointer", color:"#aaa", display:"flex", alignItems:"center", lineHeight:1 }}>
-        <ChevronRight size={13} />
-      </button>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// AnnouncementsCard — auto-cycling ticker card for the image grid
-// ─────────────────────────────────────────────────────────────
-function AnnouncementsCard({ anns }) {
+function ActualitesCard({ anns }) {
   const [idx, setIdx] = useState(0);
   const [sliding, setSliding] = useState(false);
   const CAT_C = { Général:"#1565C0", Sport:"#F57C00", Culture:"#F9A825", Logistique:"#6B7280" };
@@ -265,7 +191,7 @@ function AnnouncementsCard({ anns }) {
         alignItems:"center", justifyContent:"center" }}>
         <span style={{ fontFamily:"'DM Mono',monospace", fontSize:"0.44rem",
           color:"rgba(255,255,255,0.18)", letterSpacing:"0.18em",
-          textTransform:"uppercase" }}>Annonces</span>
+          textTransform:"uppercase" }}>Actualités</span>
       </div>
     );
   }
@@ -278,8 +204,7 @@ function AnnouncementsCard({ anns }) {
       background:"#0A0A0A", borderRadius:10, overflow:"hidden",
       position:"relative", width:"100%", height:"100%" }}>
       {/* color bar */}
-      <div style={{ height:3, background:cc, transition:"background .4s ease",
-        flexShrink:0 }} />
+      <div style={{ height:3, background:cc, transition:"background .4s ease", flexShrink:0 }} />
       {/* dot grid bg */}
       <div style={{ position:"absolute", inset:0, opacity:0.04, pointerEvents:"none",
         backgroundImage:"radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)",
@@ -296,7 +221,7 @@ function AnnouncementsCard({ anns }) {
               display:"inline-block", animation:"livepulse 2s infinite" }} />
             <span style={{ fontFamily:"'DM Mono',monospace", fontSize:"0.38rem",
               letterSpacing:"0.2em", textTransform:"uppercase",
-              color:"rgba(255,255,255,0.38)" }}>Annonces</span>
+              color:"rgba(255,255,255,0.38)" }}>Les Actualités</span>
           </div>
           <span style={{ fontFamily:"'DM Mono',monospace", fontSize:"0.36rem",
             color:"rgba(255,255,255,0.2)" }}>{idx + 1}/{anns.length}</span>
@@ -345,7 +270,114 @@ function AnnouncementsCard({ anns }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// URL helpers — YouTube / Vimeo detection
+// ÉtablissementsCard — replaces PartnersCarouselCard in the feed grid
+// Cycles through faculty images with name overlay
+// ─────────────────────────────────────────────────────────────
+function EtablissementsCard() {
+  const [idx, setIdx] = useState(0);
+  const [fading, setFading] = useState(false);
+
+  const goTo = useCallback((next) => {
+    setFading(true);
+    setTimeout(() => { setIdx(next); setFading(false); }, 320);
+  }, []);
+
+  useEffect(() => {
+    const t = setInterval(() => goTo((idx + 1) % ETABLISSEMENTS.length), 3000);
+    return () => clearInterval(t);
+  }, [idx, goTo]);
+
+  const etab = ETABLISSEMENTS[idx];
+
+  return (
+    <div style={{
+      position:"relative", borderRadius:10, overflow:"hidden",
+      background:"#ffffff",
+      display:"flex", flexDirection:"column",
+    }}>
+      {/* sliding image */}
+      {ETABLISSEMENTS.map((e, i) => (
+        <img key={i} src={e.img} alt={e.full}
+         style={{
+            position:"absolute",
+            top:"50%",
+            left:"50%",
+            transform:"translate(-50%, -50%)",
+            width:"60%",        // adjust to taste — how large the logo appears
+            height:"60%",
+            objectFit:"contain", // "contain" so the full logo is visible, not cropped
+            opacity: i === idx ? (fading ? 0 : 1) : 0,
+            transition:"opacity .4s ease"
+          }}
+          onError={ev => { ev.target.style.display = "none"; }}
+        />
+      ))}
+
+      {/* dark overlay */}
+      <div style={{ position:"absolute", inset:0,
+        background:"linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.35) 100%)",
+        pointerEvents:"none" }} />
+
+      {/* top label */}
+      <div style={{ position:"absolute", top:9, left:11, zIndex:3,
+        display:"flex", alignItems:"center", gap:"0.35rem" }}>
+        <span style={{ fontFamily:"'DM Mono',monospace", fontSize:"0.38rem",
+          letterSpacing:"0.2em", textTransform:"uppercase",
+          color:"rgba(255,255,255,0.5)", background:"rgba(0,0,0,0.35)",
+          padding:"2px 7px", borderRadius:2 }}>
+          Établissements · UDo
+        </span>
+      </div>
+
+      {/* bottom name */}
+      <div style={{ position:"absolute", bottom:0, left:0, right:0, padding:"0.65rem 0.875rem",
+        zIndex:3,
+        opacity: fading ? 0 : 1,
+        transition:"opacity .35s ease" }}>
+        <div style={{ fontFamily:"'DM Mono',monospace", fontSize:"0.42rem",
+          letterSpacing:"0.18em", textTransform:"uppercase",
+          color:"#F57C00", marginBottom:2 }}>{etab.name}</div>
+        <div style={{ fontFamily:"'Fraunces',serif", fontWeight:700,
+          fontSize:"0.72rem", color:"#fff", lineHeight:1.25,
+          display:"-webkit-box", WebkitLineClamp:2,
+          WebkitBoxOrient:"vertical", overflow:"hidden" }}>
+          {etab.full}
+        </div>
+      </div>
+
+      {/* dot indicators */}
+      <div style={{ position:"absolute", bottom:8, right:10, zIndex:4,
+        display:"flex", gap:4, alignItems:"center" }}>
+        {ETABLISSEMENTS.map((_, i) => (
+          <button key={i} onClick={() => goTo(i)}
+            style={{ width: i === idx ? 14 : 4, height:4, borderRadius:2,
+              border:"none", cursor:"pointer", padding:0,
+              background: i === idx ? "#fff" : "rgba(255,255,255,0.35)",
+              transition:"width .3s ease, background .3s ease" }} />
+        ))}
+      </div>
+
+      {/* arrows */}
+      <button onClick={() => goTo((idx - 1 + ETABLISSEMENTS.length) % ETABLISSEMENTS.length)}
+        style={{ position:"absolute", left:6, top:"50%", transform:"translateY(-50%)", zIndex:4,
+          background:"rgba(0,0,0,0.4)", border:"none", borderRadius:4,
+          padding:"3px 5px", cursor:"pointer", color:"rgba(255,255,255,0.7)",
+          display:"flex", alignItems:"center", lineHeight:1 }}>
+        <ChevronLeft size={13} />
+      </button>
+      <button onClick={() => goTo((idx + 1) % ETABLISSEMENTS.length)}
+        style={{ position:"absolute", right:6, top:"50%", transform:"translateY(-50%)", zIndex:4,
+          background:"rgba(0,0,0,0.4)", border:"none", borderRadius:4,
+          padding:"3px 5px", cursor:"pointer", color:"rgba(255,255,255,0.7)",
+          display:"flex", alignItems:"center", lineHeight:1 }}>
+        <ChevronRight size={13} />
+      </button>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// URL helpers
 // ─────────────────────────────────────────────────────────────
 function getYouTubeId(url) {
   if (!url) return null;
@@ -376,8 +408,7 @@ function isEmbedVideo(url) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// ImgCard — single image, batch carousel, or video
-// Batch items (item.urls array) auto-slide like an IG multi-post
+// ImgCard
 // ─────────────────────────────────────────────────────────────
 function ImgCard({ item, big = false, style = {} }) {
   const isBatch  = item?.urls && item.urls.length > 1;
@@ -392,7 +423,6 @@ function ImgCard({ item, big = false, style = {} }) {
   const [hovered,  setHovered]  = useState(false);
   const [slideIdx, setSlideIdx] = useState(0);
 
-  // auto-advance batch slides every 3s — ALWAYS running, no hover needed
   const timerRef = useRef(null);
   useEffect(() => {
     if (!isBatch) return;
@@ -411,7 +441,6 @@ function ImgCard({ item, big = false, style = {} }) {
     }, 3000);
   };
 
-  // current display url
   const displayUrl = isBatch ? item.urls[slideIdx]?.url : item?.url;
 
   return (
@@ -427,7 +456,6 @@ function ImgCard({ item, big = false, style = {} }) {
         if (videoRef.current) { videoRef.current.pause(); videoRef.current.currentTime = 0; }
       }}>
 
-      {/* ── BATCH: sliding images ── */}
       {isBatch && item.urls.map((u, i) => (
         <img key={i} src={u.url} alt={label}
           style={{ position:"absolute", inset:0, width:"100%", height:"100%",
@@ -438,7 +466,6 @@ function ImgCard({ item, big = false, style = {} }) {
         />
       ))}
 
-      {/* ── SINGLE IMAGE ── */}
       {!isBatch && !isVideo && displayUrl && (
         <img src={displayUrl} alt={label}
           style={{ position:"absolute", inset:0, width:"100%", height:"100%",
@@ -448,7 +475,6 @@ function ImgCard({ item, big = false, style = {} }) {
         />
       )}
 
-      {/* ── VIDEO: YouTube/Vimeo thumbnail ── */}
       {isVideo && isEmbed && (
         <img
           src={thumbUrl || ("https://img.youtube.com/vi/" + (getYouTubeId(item?.url) || "") + "/maxresdefault.jpg")}
@@ -460,7 +486,6 @@ function ImgCard({ item, big = false, style = {} }) {
         />
       )}
 
-      {/* ── VIDEO: direct file ── */}
       {isVideo && !isEmbed && item?.url && (
         <video ref={videoRef} src={item.url} muted playsInline preload="metadata"
           style={{ position:"absolute", inset:0, width:"100%", height:"100%",
@@ -468,7 +493,6 @@ function ImgCard({ item, big = false, style = {} }) {
         />
       )}
 
-      {/* ── VIDEO play button ── */}
       {isVideo && (
         <div style={{ position:"absolute", inset:0, display:"flex",
           alignItems:"center", justifyContent:"center" }}>
@@ -484,10 +508,8 @@ function ImgCard({ item, big = false, style = {} }) {
         </div>
       )}
 
-      {/* ── BATCH: dot indicators + arrows ── */}
       {isBatch && (
         <>
-          {/* arrows — shown on hover */}
           {hovered && slideIdx > 0 && (
             <button onClick={e => goSlide(e, -1)}
               style={{ position:"absolute", left:8, top:"50%",
@@ -510,7 +532,6 @@ function ImgCard({ item, big = false, style = {} }) {
               <ChevronRight size={15} color="#0A0A0A" />
             </button>
           )}
-          {/* dot strip at top */}
           <div style={{ position:"absolute", top:8, left:"50%",
             transform:"translateX(-50%)", display:"flex", gap:4, zIndex:3 }}>
             {item.urls.map((_, i) => (
@@ -521,7 +542,6 @@ function ImgCard({ item, big = false, style = {} }) {
                 boxShadow:"0 1px 3px rgba(0,0,0,0.3)" }} />
             ))}
           </div>
-          {/* count badge top-right */}
           <div style={{ position:"absolute", top:8, right:10, zIndex:3,
             background:"rgba(0,0,0,0.55)", borderRadius:3,
             padding:"2px 7px", fontFamily:"'DM Mono',monospace",
@@ -531,7 +551,6 @@ function ImgCard({ item, big = false, style = {} }) {
         </>
       )}
 
-      {/* ── VIDEO badge ── */}
       {isVideo && (
         <div style={{ position:"absolute", top:9, left:9, zIndex:2,
           background:"rgba(0,0,0,0.72)", borderRadius:3,
@@ -544,11 +563,9 @@ function ImgCard({ item, big = false, style = {} }) {
         </div>
       )}
 
-      {/* ── dark vignette ── */}
       <div style={{ position:"absolute", inset:0, pointerEvents:"none",
         background:"linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.1) 40%, transparent 70%)" }} />
 
-      {/* ── Category pill ── */}
       {cat && !isBatch && (
         <div style={{ position:"absolute", top:10, right:10 }}>
           <span style={{ fontFamily:"'DM Mono',monospace", fontSize:"0.4rem",
@@ -560,7 +577,6 @@ function ImgCard({ item, big = false, style = {} }) {
         </div>
       )}
 
-      {/* ── Caption ── */}
       {label && (
         <div style={{ position:"absolute", bottom:0, left:0, right:0,
           padding: big ? "1.25rem 1rem" : "0.75rem 0.875rem",
@@ -587,23 +603,17 @@ export default function Home() {
   const [gallery,   setGallery]   = useState([]);
   const [visitorCount, setVisitorCount] = useState(null);
 
-  // Track this visit (deduped per day)
   useVisitorTracker();
 
-  // Fetch total unique visitors for counter
-  // Real-time visitor count — updates live without page refresh
   useEffect(() => {
-    // Initial fetch
     fetchTotalVisitors().then(n => { if (n !== null) setVisitorCount(n); });
 
-    // Subscribe to inserts on site_visits table
     const channel = supabase
       .channel("visitor-count")
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "site_visits" },
         () => {
-          // New visit inserted → refetch total
           fetchTotalVisitors().then(n => { if (n !== null) setVisitorCount(n); });
         }
       )
@@ -611,21 +621,20 @@ export default function Home() {
 
     return () => { supabase.removeChannel(channel); };
   }, []);
-  const [anns,    setAnns]    = useState([]);
 
-  // stagger refs for grid sections
+  const [anns, setAnns] = useState([]);
+
   const statsStagger  = useStagger(0.1);
   const objStagger    = useStagger(0.07);
   const spStagger     = useStagger(0.07);
   const pgStagger     = useStagger(0.07);
   const feedStagger   = useStagger(0.05);
-  const annStagger    = useStagger(0.07);
 
   useEffect(() => {
     (async () => {
       const [{ data: g }, { data: a }] = await Promise.all([
         supabase.from("gallery").select("id,url,urls,caption,type,category").order("created_at",{ascending:false}).limit(4),
-        supabase.from("announcements").select("id,title,body,author,category,pinned,created_at").order("pinned",{ascending:false}).order("created_at",{ascending:false}).limit(3),
+        supabase.from("announcements").select("id,title,body,author,category,pinned,created_at").order("pinned",{ascending:false}).order("created_at",{ascending:false}).limit(5),
       ]);
       if (g) setGallery(g);
       if (a) setAnns(a);
@@ -635,19 +644,17 @@ export default function Home() {
   const feed = [...gallery];
   while (feed.length < 4) feed.push(FEED_PLACEHOLDERS[feed.length % FEED_PLACEHOLDERS.length]);
 
-  const timeAgo = (iso) => {
-    const d = Date.now() - new Date(iso).getTime(), m = Math.floor(d/60000);
-    if (m<1) return "À l'instant"; if (m<60) return `Il y a ${m}min`;
-    const h = Math.floor(m/60); if (h<24) return `Il y a ${h}h`;
-    return `Il y a ${Math.floor(h/24)}j`;
-  };
+const catEntries = Object.entries(PROGRAM);
 
-  const featuredEvents = [
-    PROGRAM.sports[0], PROGRAM.cultural[7], PROGRAM.cultural[4],
-    PROGRAM.intellectual[0], PROGRAM.sports[1], PROGRAM.cultural[5],
-  ];
+const featuredEvents = [
+  PROGRAM.sports?.items[0],
+  PROGRAM.culturelles?.items[0],
+  PROGRAM.festivals?.items[0],
+  PROGRAM.scientifiques?.items[0],
+  PROGRAM.sports?.items[1],
+  PROGRAM.ceremonies?.items[0],
+].filter(Boolean);
 
-  // ── inline style helpers ──
   const S = {
     page:     { background:"#f8f8f6", paddingTop:64, overflowX:"hidden" },
     maxW:     { maxWidth:1280, margin:"0 auto" },
@@ -661,7 +668,6 @@ export default function Home() {
   return (
     <div style={S.page}>
 
-      {/* ══════════ GLOBAL STYLES ══════════ */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Fraunces:ital,wght@0,700;1,400&family=DM+Mono:wght@400;500&display=swap');
         *, *::before, *::after { box-sizing: border-box; }
@@ -675,11 +681,9 @@ export default function Home() {
         .ff-f { font-family:'Fraunces',serif; }
         .ff-m { font-family:'DM Mono',monospace; }
 
-        /* ticker */
         @keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
         .ticker-run { animation: ticker 32s linear infinite; }
 
-        /* page load animations */
         @keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:none} }
         .ld0{opacity:0;animation:fadeUp .6s ease .05s forwards}
         .ld1{opacity:0;animation:fadeUp .6s ease .2s  forwards}
@@ -687,11 +691,9 @@ export default function Home() {
         .ld3{opacity:0;animation:fadeUp .6s ease .5s  forwards}
         .ld4{opacity:0;animation:fadeUp .6s ease .65s forwards}
 
-        /* live dot */
         @keyframes livepulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.35;transform:scale(.75)} }
         .live { animation: livepulse 1.8s infinite; display:inline-block; }
 
-        /* stat hover */
         .stat-cell { position:relative; overflow:hidden; cursor:default; }
         .stat-cell::after {
           content:''; position:absolute; bottom:0; left:0; right:0; height:2px;
@@ -700,19 +702,16 @@ export default function Home() {
         }
         .stat-cell:hover::after { opacity:1; }
 
-        /* obj */
         .obj-card { transition:background .25s; }
         .obj-card:hover { background:#F5F0E8 !important; }
         .obj-num  { transition:transform .3s; }
         .obj-card:hover .obj-num { transform:translateX(6px); }
 
-        /* prog */
         .prog-card { transition:background .22s; }
         .prog-card.light:hover { background:#F0ECE4 !important; }
         .prog-card.dark { background:#0A0A0A !important; }
         .prog-card.dark:hover { background:#111 !important; }
 
-        /* btn */
         .btn-blue  { transition:background .2s,transform .2s; }
         .btn-blue:hover  { background:#0D47A1 !important; transform:translateX(2px); }
         .btn-ink   { transition:background .2s,color .2s; }
@@ -722,23 +721,15 @@ export default function Home() {
         .lnk { transition:background .18s,color .18s; }
         .lnk:hover { background:#1565C0 !important; color:#fff !important; }
 
-        /* ann card */
-        .ann-card { transition:box-shadow .22s,transform .22s; }
-        .ann-card:hover { box-shadow:0 4px 20px rgba(0,0,0,.09); transform:translateY(-2px); }
-
-        /* uni image */
         .uni-reveal { transition:opacity 1.4s ease, transform 1.4s ease; }
 
-        /* partner strip logo */
         .p-logo { transition:transform .25s; }
         .p-logo:hover { transform:scale(1.06); }
 
-        /* ── RESPONSIVE ── */
         @media(max-width:900px){
           .g2{grid-template-columns:1fr !important;}
           .g3{grid-template-columns:repeat(2,1fr) !important;}
           .g4{grid-template-columns:repeat(2,1fr) !important;}
-          /* feed: JS-controlled */
           .stats-g{grid-template-columns:repeat(2,1fr) !important;}
         }
         @media(max-width:640px){
@@ -746,47 +737,19 @@ export default function Home() {
           .g3{grid-template-columns:1fr !important;}
           .g4{grid-template-columns:repeat(2,1fr) !important;}
           .hide-sm{display:none !important;}
-
-          /* identity bar — stack vertically */
           .ibar{flex-direction:column !important; align-items:flex-start !important; padding:1rem 1.25rem !important; gap:0.875rem !important;}
-
-          /* stats — 2 columns */
           .stats-g{grid-template-columns:repeat(2,1fr) !important;}
-
-          /* partner strip — tighter */
           .sec-pad{padding-left:1.25rem !important;padding-right:1.25rem !important;}
-
-          /* feed: JS-controlled */
-
-          /* section headers */
           .sec-hdr-mob{padding:0.875rem 1.25rem !important; flex-wrap:wrap !important;}
-
-          /* objectives — 2 col on mobile */
           .g4{grid-template-columns:repeat(2,1fr) !important;}
-
-          /* prog/sp — 1 col */
           .g3-mob{grid-template-columns:1fr !important;}
-
-          /* CTA */
           .cta-mob{grid-template-columns:1fr !important; min-height:auto !important;}
-
-          /* visitor strip */
           .visitor-strip{flex-direction:column !important; gap:0.5rem !important; text-align:center !important;}
           .visitor-divider{display:none !important;}
-
-          /* general padding */
           .pad-mob{padding:1.5rem 1.25rem !important;}
-
-          /* fix partners strip height */
           .partner-strip{height:48px !important;}
-
-          /* announcement card in grid — ensure not hidden */
           .feed-side > *{min-height:140px !important;}
-
-          /* wide strip */
           .feed-strip{height:110px !important;}
-
-          /* section spacers */
           .sec-hdr-mob{padding:0.875rem 1.25rem !important;}
         }
         @media(max-width:400px){
@@ -815,11 +778,10 @@ export default function Home() {
       </div>
 
       {/* ════════════════════════════
-          2. PARTNERS STRIP — full color logos
+          2. PARTNERS STRIP
       ════════════════════════════ */}
       <div style={{ background:"#fff", borderBottom:S.rule, overflow:"hidden" }}>
         <div style={{ ...S.maxW, display:"flex", alignItems:"stretch" }}>
-          {/* blue label tab */}
           <div style={{ flexShrink:0, padding:"0 1.25rem", background:"#1565C0",
             display:"flex", alignItems:"center", justifyContent:"center" }}>
             <span className="ff-m" style={{ fontSize:"0.42rem", letterSpacing:"0.24em",
@@ -827,7 +789,6 @@ export default function Home() {
               Partenaires
             </span>
           </div>
-          {/* scrolling logos */}
           <div style={{ flex:1, overflow:"hidden", position:"relative", height:52 }}>
             <div style={{ position:"absolute", left:0, top:0, bottom:0, width:36,
               background:"linear-gradient(to right,#fff,transparent)", zIndex:2, pointerEvents:"none" }} />
@@ -881,36 +842,31 @@ export default function Home() {
             </div>
             <Countdown compact />
           </div>
-
-          <div className="ld2 hide-sm" style={{ flexShrink:0, display:"flex",
-            alignItems:"center", gap:"0.65rem", paddingLeft:"1.75rem", borderLeft:S.rule }}>
-            <img src={uniLogo} alt="UDo" style={{ height:28, opacity:.75 }} />
-            <div>
-              <div className="ff-f" style={{ fontWeight:700, fontSize:"0.72rem", color:"#0A0A0A" }}>
-                {META.patron}
-              </div>
-              <div className="ff-m" style={{ fontSize:"0.4rem", textTransform:"uppercase",
-                letterSpacing:"0.12em", color:"#88887F" }}>
-                Haut Patronage
-              </div>
-            </div>
-          </div>
-
-          <div className="ld3" style={{ display:"flex", gap:"0.5rem", flexShrink:0, flexWrap:"wrap" }}>
-            <Link to="/programme" className="btn-blue ff-m"
-              style={{ background:"#1565C0", color:"#fff", padding:"0.6rem 1.25rem",
-                fontSize:"0.54rem", letterSpacing:"0.14em", textTransform:"uppercase",
-                textDecoration:"none", display:"inline-flex", alignItems:"center",
-                gap:"0.4rem", borderRadius:3 }}>
-              Programme <ArrowRight size={11} />
-            </Link>
-            <Link to="/sponsoring" className="btn-ink ff-m"
-              style={{ border:"1.5px solid #0A0A0A", color:"#0A0A0A", padding:"0.6rem 1.25rem",
-                fontSize:"0.54rem", letterSpacing:"0.14em", textTransform:"uppercase",
-                textDecoration:"none", borderRadius:3 }}>
-              Sponsor
-            </Link>
-          </div>
+          {/* after the Countdown div, still inside the ibar flex container */}
+{visitorCount !== null && (
+  <div className="ld3 hide-sm" style={{
+    flexShrink: 0, paddingLeft: "1.75rem", borderLeft: S.rule,
+    display: "flex", flexDirection: "column", gap: 3,
+  }}>
+    <div className="ff-m" style={{ fontSize: "0.42rem", letterSpacing: "0.2em",
+      textTransform: "uppercase", color: "#88887F" }}>
+      Visiteurs
+    </div>
+    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+      <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#4CAF50",
+        display: "inline-block", flexShrink: 0,
+        boxShadow: "0 0 0 2px rgba(76,175,80,.25)",
+        animation: "livepulse 2s infinite" }} />
+      <span className="ff-b" style={{ fontSize: "1.4rem", lineHeight: 1, color: "#0A0A0A" }}>
+        {visitorCount.toLocaleString("fr-FR")}
+      </span>
+      <span className="ff-m" style={{ fontSize: "0.44rem", letterSpacing: "0.16em",
+        textTransform: "uppercase", color: "#88887F" }}>
+        STUD 2026
+      </span>
+    </div>
+  </div>
+)}
         </div>
       </div>
 
@@ -933,60 +889,16 @@ export default function Home() {
         ))}
       </div>
 
-      {/* ── VISITOR COUNTER STRIP ── */}
-      {visitorCount !== null && (
-        <Reveal>
-          <div style={{ background:"#0A0A0A", borderBottom:S.ruleHeavy }}>
-            <div className="visitor-strip" style={{ ...S.maxW, display:"flex", alignItems:"center",
-              justifyContent:"center", gap:"1rem", padding:"0.75rem 2.5rem",
-              flexWrap:"wrap" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:"0.5rem" }}>
-                <span style={{ width:7, height:7, borderRadius:"50%",
-                  background:"#4CAF50", display:"inline-block",
-                  boxShadow:"0 0 0 2px rgba(76,175,80,.3)",
-                  animation:"livepulse 2s infinite" }} />
-                <span className="ff-m" style={{ fontSize:"0.48rem",
-                  letterSpacing:"0.2em", textTransform:"uppercase",
-                  color:"rgba(255,255,255,.4)" }}>
-                  Site en ligne
-                </span>
-              </div>
-              <div className="visitor-divider" style={{ width:1, height:16,
-                background:"rgba(255,255,255,.1)" }} />
-              <div style={{ display:"flex", alignItems:"baseline", gap:"0.5rem" }}>
-                <span className="ff-b" style={{ fontSize:"1.4rem",
-                  letterSpacing:"0.04em", color:"#fff", lineHeight:1 }}>
-                  {visitorCount.toLocaleString("fr-FR")}
-                </span>
-                <span className="ff-m" style={{ fontSize:"0.46rem",
-                  letterSpacing:"0.18em", textTransform:"uppercase",
-                  color:"rgba(255,255,255,.4)" }}>
-                  visiteurs uniques
-                </span>
-              </div>
-              <div className="visitor-divider" style={{ width:1, height:16,
-                background:"rgba(255,255,255,.1)" }} />
-              <span className="ff-m" style={{ fontSize:"0.44rem",
-                letterSpacing:"0.14em", textTransform:"uppercase",
-                color:"rgba(255,255,255,.28)" }}>
-                STUD 2026
-              </span>
-            </div>
-          </div>
-        </Reveal>
-      )}
+
 
       {/* ════════════════════════════
           4. VISUAL FEED
           Big card left + right column:
-            - small image
-            - announcements card (cool ticker style)
-            - partners carousel
-          Bottom: wide image strip
+            - image card top-right
+            - ActualitésCard (announcements rebranded) + ÉtablissementsCard
       ════════════════════════════ */}
       <div className="pad-mob" style={{ ...S.maxW, padding:"2rem 2.5rem" }}>
 
-        {/* section header */}
         <Reveal delay={0.05}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
             marginBottom:"1rem", flexWrap:"wrap", gap:"0.5rem" }}>
@@ -1003,7 +915,7 @@ export default function Home() {
                   fontSize:"0.5rem", letterSpacing:"0.14em", textTransform:"uppercase",
                   textDecoration:"none", display:"inline-flex", alignItems:"center",
                   gap:"0.3rem", borderRadius:2 }}>
-                Annonces <ArrowRight size={9} />
+                Actualités <ArrowRight size={9} />
               </Link>
               <Link to="/gallery" className="lnk ff-m"
                 style={{ border:"1px solid #1565C0", color:"#1565C0", padding:"0.28rem 0.7rem",
@@ -1016,20 +928,17 @@ export default function Home() {
           </div>
         </Reveal>
 
-        {/* ── FEED GRID ── 4 blocks on both desktop and mobile ── */}
         {isMobile ? (
-          /* MOBILE: stacked, explicit heights, nothing hidden */
           <div ref={feedStagger} style={{ display:"flex", flexDirection:"column", gap:8 }}>
             <ImgCard item={feed[0]} big style={{ height:240 }} />
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, height:155 }}>
-              <AnnouncementsCard anns={anns} />
-              <PartnersCarouselCard />
+              <ActualitesCard anns={anns} />
+              <EtablissementsCard />
             </div>
             <ImgCard item={feed[1]} style={{ height:175 }} />
             <ImgCard item={feed[2]} style={{ height:155 }} />
           </div>
         ) : (
-          /* DESKTOP: classic 2-col grid, explicit row heights, gridRow span for big card */
           <div ref={feedStagger}
             style={{ display:"grid",
               gridTemplateColumns:"1.5fr 1fr",
@@ -1038,99 +947,24 @@ export default function Home() {
 
             {/* big card — left column, spans both rows */}
             <ImgCard item={feed[0]} big
-              style={{ gridRow:"1 / 3", gridColumn:"1",
-                height:"100%", borderRadius:10 }} />
+              style={{ gridRow:"1 / 3", gridColumn:"1", height:"100%", borderRadius:10 }} />
 
             {/* top-right: image */}
             <ImgCard item={feed[1]}
               style={{ height:"100%", borderRadius:10 }} />
 
-            {/* bottom-right: announcements + partners */}
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr",
-              gap:10, height:"100%" }}>
-              <AnnouncementsCard anns={anns} />
-              <PartnersCarouselCard />
+            {/* bottom-right: actualités + établissements */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, height:"100%" }}>
+              <ActualitesCard anns={anns} />
+              <EtablissementsCard />
             </div>
           </div>
         )}
 
-      </div>{/* end pad-mob feed section */}
-
-      {/* ════════════════════════════
-          5. FACULTY STRIP — "Ils Prendront Part"
-      ════════════════════════════ */}
-      <FacultyStrip />
-
-      {/* ════════════════════════════
-          6. ANNOUNCEMENTS
-          (moved here, below faculty strip)
-      ════════════════════════════ */}
-      <div style={{ background:"#fff", borderTop:S.ruleHeavy, borderBottom:S.ruleHeavy }}>
-        <div style={{ ...S.maxW }}>
-          <Reveal>
-            <div className="sec-pad" style={{ ...S.secHdr }}>
-              <span className="ff-b" style={{ fontSize:"1.35rem", letterSpacing:"0.06em",
-                display:"flex", alignItems:"center", gap:"0.5rem" }}>
-                <Megaphone size={18} strokeWidth={1.5} style={{color:"#F57C00"}} />
-                Dernières <span style={{color:"#F57C00", marginLeft:5}}>Annonces</span>
-              </span>
-              <Link to="/announcements" className="lnk ff-m"
-                style={{ border:"1px solid #1565C0", color:"#1565C0", padding:"0.28rem 0.7rem",
-                  fontSize:"0.5rem", letterSpacing:"0.14em", textTransform:"uppercase",
-                  textDecoration:"none", display:"inline-flex", alignItems:"center",
-                  gap:"0.3rem", borderRadius:2 }}>
-                Toutes <ArrowRight size={9} />
-              </Link>
-            </div>
-          </Reveal>
-
-          {anns.length === 0 ? (
-            <Reveal delay={0.1}>
-              <div style={{ padding:"3rem 2.5rem", textAlign:"center" }}>
-                <p className="ff-f" style={{ fontStyle:"italic", color:"#88887F", fontSize:"0.9rem" }}>
-                  Aucune annonce pour le moment.
-                </p>
-              </div>
-            </Reveal>
-          ) : (
-            <div ref={annStagger} className="g3"
-              style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)" }}>
-              {anns.map((ann, i) => {
-                const cc = CAT_COLORS[ann.category] || "#1565C0";
-                return (
-                  <Link key={ann.id} to="/announcements" className="ann-card"
-                    style={{ display:"flex", flexDirection:"column", textDecoration:"none",
-                      height:"100%", borderLeft: i>0?S.rule:"none" }}>
-                    {/* top color bar */}
-                    <div style={{ height:4, background:cc, flexShrink:0 }} />
-                    <div style={{ padding:"1.5rem 2rem", display:"flex", flexDirection:"column",
-                      gap:"0.6rem", flex:1 }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:"0.5rem", flexWrap:"wrap" }}>
-                        {ann.pinned && <Pin size={10} style={{color:cc}} />}
-                        <span className="ff-m" style={{ fontSize:"0.46rem", textTransform:"uppercase",
-                          letterSpacing:"0.16em", color:cc }}>{ann.category}</span>
-                        <span className="ff-m" style={{ fontSize:"0.44rem", color:"#88887F",
-                          marginLeft:"auto" }}>{timeAgo(ann.created_at)}</span>
-                      </div>
-                      <h3 className="ff-f" style={{ fontWeight:700, fontSize:"0.95rem",
-                        color:"#0A0A0A", lineHeight:1.4, margin:0 }}>{ann.title}</h3>
-                      <p className="ff-f" style={{ fontStyle:"italic", fontSize:"0.8rem",
-                        color:"#3D3D38", lineHeight:1.7, margin:0, flex:1 }}>
-                        {ann.body.length>110 ? ann.body.slice(0,110)+"…" : ann.body}
-                      </p>
-                      <div className="ff-m" style={{ fontSize:"0.44rem", color:"#88887F",
-                        paddingTop:"0.5rem", borderTop:S.rule }}>{ann.author}</div>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </div>
       </div>
 
       {/* ════════════════════════════
-          7. OBJECTIVES
+          5. OBJECTIVES
       ════════════════════════════ */}
       <section style={{ borderBottom:S.ruleHeavy }}>
         <div style={{ ...S.maxW }}>
@@ -1173,11 +1007,10 @@ export default function Home() {
       </section>
 
       {/* ════════════════════════════
-          8. UNIVERSITY
+          6. UNIVERSITY
       ════════════════════════════ */}
       <section style={{ borderBottom:S.ruleHeavy }}>
         <div className="g2" style={{ ...S.maxW, display:"grid", gridTemplateColumns:"1fr 1fr" }}>
-          {/* image side */}
           <Reveal from="left">
             <div style={{ position:"relative", minHeight:440, overflow:"hidden" }}>
               <img src={uniImg} alt="Université de Douala" className="uni-reveal"
@@ -1197,7 +1030,6 @@ export default function Home() {
             </div>
           </Reveal>
 
-          {/* text side */}
           <Reveal from="right">
             <div style={{ padding:"3rem", background:"#fff", display:"flex",
               flexDirection:"column", justifyContent:"center", minHeight:440 }}>
@@ -1233,7 +1065,7 @@ export default function Home() {
       </section>
 
       {/* ════════════════════════════
-          9. FEATURED PROGRAMME
+          7. FEATURED PROGRAMME
       ════════════════════════════ */}
       <section style={{ borderBottom:S.ruleHeavy }}>
         <div style={{ ...S.maxW }}>
@@ -1287,7 +1119,7 @@ export default function Home() {
       </section>
 
       {/* ════════════════════════════
-          10. SPONSORING
+          8. SPONSORING
       ════════════════════════════ */}
       <section style={{ borderBottom:S.ruleHeavy, background:"#fff" }}>
         <div style={{ ...S.maxW }}>
@@ -1355,15 +1187,12 @@ export default function Home() {
 
       {/* ════════════════════════════
           EVALUATION CTA STRIP
-          Visible to all visitors
       ════════════════════════════ */}
       <Reveal>
         <section style={{ borderTop:"2px solid #ede9e0", borderBottom:"2px solid #ede9e0" }}>
           <div style={{ ...S.maxW, display:"flex", alignItems:"center",
             justifyContent:"space-between", flexWrap:"wrap", gap:"1.5rem",
             padding:"2.25rem 2.5rem" }}>
-
-            {/* left: icon + text */}
             <div style={{ display:"flex", alignItems:"center", gap:"1.25rem" }}>
               <div style={{ width:52, height:52, borderRadius:"50%", background:"#EEF4FF",
                 display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
@@ -1385,8 +1214,6 @@ export default function Home() {
                 </p>
               </div>
             </div>
-
-            {/* right: CTA button */}
             <Link to="/evaluation"
               style={{ flexShrink:0, background:"#1565C0", color:"#fff",
                 padding:"0.85rem 2rem", fontFamily:"'DM Mono',monospace",
@@ -1404,7 +1231,7 @@ export default function Home() {
       </Reveal>
 
       {/* ════════════════════════════
-          11. BOTTOM CTA
+          9. BOTTOM CTA
       ════════════════════════════ */}
       <section>
         <div className="g2" style={{ ...S.maxW, display:"grid",

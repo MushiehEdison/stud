@@ -56,25 +56,6 @@ export default function Navbar() {
             );
           })}
 
-          {/* Évaluer — orange accent, always visible */}
-          <Link to="/evaluation" style={{
-            textDecoration: "none", display: "flex", alignItems: "center", gap: "0.4rem",
-            padding: "0 1.1rem",
-            fontFamily: "'DM Mono', monospace", fontSize: "0.65rem",
-            letterSpacing: "0.1em", textTransform: "uppercase",
-            color: isEval ? "#F57C00" : "#0F0F0F",
-            borderLeft: "1.5px solid #EAEAE5",
-            borderBottom: isEval ? "3px solid #F57C00" : "3px solid transparent",
-            transition: "color 0.15s",
-            whiteSpace: "nowrap",
-          }}
-            onMouseEnter={e => { e.currentTarget.style.color = "#F57C00"; }}
-            onMouseLeave={e => { e.currentTarget.style.color = isEval ? "#F57C00" : "#0F0F0F"; }}
-          >
-            <Star size={11} style={{ flexShrink: 0 }} />
-            Évaluer
-          </Link>
-
           <Link to="/contact" style={{
             textDecoration: "none", display: "flex", alignItems: "center",
             padding: "0 1.4rem",
@@ -119,18 +100,6 @@ export default function Navbar() {
           }}>{link.label}</Link>
         ))}
 
-        {/* Évaluer in mobile menu */}
-        <Link to="/evaluation" style={{
-          display: "flex", alignItems: "center", gap: "0.5rem",
-          padding: "0.9rem 2rem", textDecoration: "none",
-          fontFamily: "'DM Mono', monospace", fontSize: "0.78rem",
-          letterSpacing: "0.08em", textTransform: "uppercase",
-          color: isEval ? "#F57C00" : "#0F0F0F",
-          borderBottom: "1px solid #EAEAE5",
-        }}>
-          <Star size={13} />
-          Évaluer
-        </Link>
 
         <Link to="/contact" style={{
           display: "block", padding: "0.9rem 2rem",

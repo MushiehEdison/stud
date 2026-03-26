@@ -8,7 +8,6 @@ import Programme from "./pages/programme";
 import Sponsoring from "./pages/sponsoring";
 import Contact from "./pages/contact";
 import Gallery from "./pages/gallery";
-import Announcements from "./pages/announcements";
 import AdminPanel from "./pages/adminPanel";
 import EvaluationPage from "./pages/EvaluationPage";   // ← NEW
 import TestimonialsPage from "./pages/TestimonialsPage";
@@ -46,11 +45,10 @@ export default function App() {
           <PublicLayout>
             <Routes>
               <Route path="/"             element={<Home />} />
-              <Route path="/about"        element={<About />} />
+              <Route path="/a-propos"        element={<About />} />
               <Route path="/programme"    element={<Programme />} />
               <Route path="/sponsoring"   element={<Sponsoring />} />
               <Route path="/gallery"      element={<Gallery />} />
-              <Route path="/announcements" element={<Announcements />} />
               <Route path="/contact"      element={<Contact />} />
             </Routes>
           </PublicLayout>
